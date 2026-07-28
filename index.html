@@ -343,75 +343,25 @@
         </div>
       </div>
 
-      <!-- ====================================================================
-           [RESERVATION SCREEN] (合わせ予約)
+<!-- ====================================================================
+           [MAP SCREEN] (マップ)
            ==================================================================== -->
-      <div id="screen-reservation" class="screen-content hidden p-4">
-        <div class="flex justify-between items-center mb-2 flex-shrink-0">
-          <h2 class="text-xl font-bold text-gray-900 tracking-tight">合わせ予約</h2>
-          <span class="text-[10px] font-black text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full uppercase tracking-wider">グループ同調中</span>
-        </div>
-        <p class="text-xs text-gray-500 mb-4">メンバーと予定を合わせて部室やライブイベントを同時予約するためのシミュレータです。</p>
-
-        <!-- グループ共有カード -->
-        <div class="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm mb-4">
-          <div class="flex justify-between items-center mb-3">
+      <div id="screen-map" class="screen-content hidden p-0 h-full flex flex-col relative">
+        <!-- 上部に被さる情報カード -->
+        <div class="absolute top-0 left-0 right-0 p-4 z-10 pointer-events-none">
+          <div class="bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-sm border border-gray-100 pointer-events-auto flex justify-between items-center">
             <div>
-              <div class="text-[9px] font-black text-gray-400 uppercase tracking-wider">GROUP CODE</div>
-              <div class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-                <i data-lucide="users" class="w-4 h-4 text-slate-500"></i>
-                <span id="active-group-code" class="font-mono tracking-wider">SAKAE105</span>
-              </div>
+              <h2 class="text-sm font-black text-gray-900 tracking-tight">イベント会場</h2>
+              <p class="text-[10px] text-gray-500 font-bold mt-1">RAD HALL (愛知県名古屋市中区大須)</p>
             </div>
-            <button onclick="copyGroupCode()" class="px-2.5 py-1.5 bg-gray-100 text-gray-700 hover:bg-gray-200 text-[10px] font-bold rounded-lg flex items-center gap-1 transition-colors">
-              <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-              <span>コードコピー</span>
+            <button onclick="window.open('https://maps.google.com/?q=RAD+HALL', '_blank')" class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-800 hover:bg-gray-200 active:scale-95 transition-transform">
+              <i data-lucide="external-link" class="w-5 h-5"></i>
             </button>
           </div>
-          <!-- メンバーリスト -->
-          <div class="border-t border-gray-50 pt-3 flex items-center gap-2 overflow-x-auto dynamic-scroll-area">
-            <div class="flex items-center gap-1.5 bg-indigo-50 border border-indigo-100/50 rounded-full px-2.5 py-1 text-xs font-black text-indigo-700 flex-shrink-0">
-              <div class="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-ping"></div>
-              <span>あなた</span>
-            </div>
-            <div class="flex items-center gap-1.5 bg-slate-100 rounded-full px-2.5 py-1 text-xs font-bold text-slate-600 flex-shrink-0">
-              <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
-              <span>友達A (オンライン)</span>
-            </div>
-            <div class="flex items-center gap-1.5 bg-slate-100 rounded-full px-2.5 py-1 text-xs font-bold text-slate-600 flex-shrink-0">
-              <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
-              <span>友達B (オンライン)</span>
-            </div>
-          </div>
         </div>
-
-        <!-- 日付選択＆タイムスロット -->
-        <div class="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
-          <div class="flex justify-between items-center mb-4 pb-2 border-b border-gray-100">
-            <h3 class="text-xs font-black text-gray-800 uppercase tracking-wider flex items-center gap-1.5">
-              <i data-lucide="calendar" class="w-4 h-4 text-gray-400"></i>
-              候補日程を選択
-            </h3>
-            <div class="inline-flex bg-gray-100 p-0.5 rounded-lg">
-              <button onclick="setReservationDate(1)" id="btn-res-day1" class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-white text-gray-900 shadow-sm">Day 1</button>
-              <button onclick="setReservationDate(2)" id="btn-res-day2" class="px-2.5 py-1 rounded-md text-[10px] font-bold text-gray-600">Day 2</button>
-            </div>
-          </div>
-
-          <!-- 時間枠スロットリスト -->
-          <div id="reservation-slots-container" class="space-y-2.5 mb-5">
-            <!-- 動的に生成されます -->
-          </div>
-
-          <!-- 予約確定セクション -->
-          <button onclick="confirmReservation()" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-xl text-xs flex items-center justify-center gap-2 active:scale-95 transition-all shadow-md">
-            <i data-lucide="calendar-check" class="w-4 h-4"></i>
-            <span>合わせ予約を確定する</span>
-          </button>
-          <p class="text-[9px] text-gray-400 text-center mt-2">※お互いの「希望(◯)」が一致した枠が自動的に最優先予約されます。</p>
-        </div>
+        <!-- Google Maps iframe -->
+        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3261.6425102559097!2d136.901594975764!3d35.1655610727581!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x600370d301323e25%3A0xbccfde8fdfb55db5!2sRAD%20HALL!5e0!3m2!1sja!2sjp!4v1700000000000!5m2!1sja!2sjp" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" class="flex-1 w-full h-[calc(100vh-6rem)] md:h-[800px] object-cover"></iframe>
       </div>
-    </div>
 
     <!-- ====================================================================
          [FLOATING BOTTOM NAVIGATION] - iOSセーフエリア考慮
@@ -429,9 +379,9 @@
         <i data-lucide="calendar" class="w-5 h-5"></i>
         <span class="text-xs uppercase tracking-wide hidden">TIMETABLE</span>
       </button>
-      <button onclick="switchScreen('reservation')" id="nav-reservation" class="flex items-center gap-1.5 py-2 px-4 rounded-full transition-all duration-300 text-gray-500">
-        <i data-lucide="calendar-check" class="w-5 h-5"></i>
-        <span class="text-xs uppercase tracking-wide hidden">合わせ予約</span>
+      <button onclick="switchScreen('map')" id="nav-map" class="flex items-center gap-1.5 py-2 px-4 rounded-full transition-all duration-300 text-gray-500">
+        <i data-lucide="map" class="w-5 h-5"></i>
+        <span class="text-xs uppercase tracking-wide hidden">MAP</span>
       </button>
     </nav>
 
@@ -1438,7 +1388,7 @@
           targetScreen.classList.remove('hidden');
         }
 
-        const navButtons = ['home', 'artist', 'timetable', 'reservation'];
+        const navButtons = ['home', 'artist', 'timetable', 'map'];
         navButtons.forEach(btn => {
           const el = document.getElementById(`nav-${btn}`);
           if (!el) return;
@@ -1458,8 +1408,8 @@
           renderArtists();
         } else if (screenId === 'timetable') {
           renderTimetable();
-        } else if (screenId === 'reservation') {
-          renderReservationSlots();
+        } else if (screenId === 'map') {
+          // マップ画面特有の初期化処理が必要な場合はここに記述
         }
       } catch (e) {
         console.error("Tab switch execution error:", e);
