@@ -1,3 +1,2096 @@
-<title>
-  Hello World
-</title>
+<!DOCTYPE html>
+<html lang="ja" class="h-full overflow-hidden">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>MY PRIVATE APP</title>
+  
+  <!-- iOS PWA (ホーム画面追加時) メタタグ -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="PRIVATE APP">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Google Fonts (Noto Sans JP) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght=300;400;500;700;900&display=swap" rel="stylesheet">
+  
+  <!-- Firebase Compat SDK (ブラウザ動作最適化) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
+  <style>
+    html, body {
+      overflow: hidden;
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      position: fixed; /* iOSでのバウンススクロールを強力に防止 */
+      background-color: #121212;
+    }
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: none; /* 外側の不要なジェスチャーを抑制 */
+    }
+    
+    /* 内部のスクロール可能なエリアのみタッチ操作を許可 */
+    .scrollable-area {
+      touch-action: pan-y;
+      -webkit-overflow-scrolling: touch;
+    }
+    /* スクロールバー非表示 */
+    .dynamic-scroll-area::-webkit-scrollbar {
+      display: none;
+    }
+    .dynamic-scroll-area {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* ==========================================================================
+       [UI/UX スタイル] 画面遷移アニメーション・共通パーツ
+       ========================================================================== */
+    .screen-transition {
+      transition: transform 0.3s cubic-bezier(0.32, 0.94, 0.6, 1);
+    }
+
+    /* 共通ユーティリティクラス（丸型アイコンボタン） */
+    .btn-icon-round {
+      width: 40px;
+      height: 40px;
+      border-radius: 9999px;
+      background-color: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      transition: transform 0.1s ease;
+    }
+    .btn-icon-round:active {
+      transform: scale(0.95);
+    }
+
+    /* グリッドメニューの共通アイテム */
+    .grid-menu-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: transform 0.1s ease;
+    }
+    .grid-menu-item:active {
+      transform: scale(0.95);
+    }
+    .grid-menu-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 9999px;
+      border: 1px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #374151;
+      background-color: #f9fafb;
+      transition: background-color 0.2s;
+    }
+    .grid-menu-item:hover .grid-menu-icon {
+      background-color: #f3f4f6;
+    }
+
+    /* 共通カード定義 */
+    .standard-card {
+      background-color: #ffffff;
+      border-radius: 16px;
+      border: 1px solid #f3f4f6;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      transition: background-color 0.2s;
+    }
+  </style>
+</head>
+<body class="md:flex md:justify-center md:items-center min-h-full text-gray-800">
+
+  <!-- モバイルメインコンテナ (モバイル時は全画面に完全追従、PC時はデバイス型コンテナ) -->
+  <div class="w-full h-[100dvh] md:w-md md:max-w-md md:h-[850px] md:rounded-3xl bg-gray-50 shadow-2xl relative flex flex-col overflow-hidden fixed inset-0 md:relative md:inset-auto">
+
+    <!-- カスタムトースト通知 -->
+    <div id="toast-notification" class="absolute top-12 left-4 right-4 bg-gray-900/95 backdrop-blur-md text-white px-4 py-3 rounded-xl shadow-xl z-[200] transform -translate-y-28 opacity-0 transition-all duration-300 flex items-center gap-3">
+      <div class="w-6 h-6 rounded-full bg-yellow-400 flex items-center justify-center text-gray-950 flex-shrink-0">
+        <i data-lucide="bell" class="w-4 h-4"></i>
+      </div>
+      <span id="toast-message" class="text-xs font-bold"></span>
+    </div>
+
+    <!-- アプリ画面メインエリア (内部のみ縦スクロールを許可、下部セーフエリア余白追加) -->
+    <div id="main-scroll-area" class="flex-1 overflow-y-auto pb-40 pb-[calc(10rem+env(safe-area-inset-bottom))] dynamic-scroll-area scrollable-area">
+
+      <!-- ====================================================================
+           [HOME SCREEN]
+           ==================================================================== -->
+      <div id="screen-home" class="screen-content">
+        <!-- ヘッダーイメージ & アクションボタン -->
+        <div class="relative w-full aspect-[16/10] bg-black flex-shrink-0">
+          <img src="https://ul.h3z.jp/yJrIE3x8.jpg" alt="HEADER VISUAL" class="w-full h-full object-cover">
+          <div class="absolute top-4 left-4 right-4 flex justify-between items-center z-10">
+            <button onclick="openFullscreen('notifications')" class="btn-icon-round" aria-label="お知らせ">
+              <i data-lucide="bell" class="w-5 h-5"></i>
+            </button>
+            <button onclick="openFullscreen('settings')" class="btn-icon-round" aria-label="設定">
+              <i data-lucide="settings" class="w-5 h-5"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- メイングリッドメニュー -->
+        <div class="mx-4 -mt-10 bg-white rounded-2xl shadow-xl p-4 grid grid-cols-4 gap-x-2 gap-y-5 relative z-20 border border-gray-100">
+          <!-- インフォ -->
+          <button onclick="openFullscreen('info')" class="grid-menu-item">
+            <div class="grid-menu-icon"><i data-lucide="info" class="w-5 h-5"></i></div>
+            <span class="text-[10px] font-bold text-gray-700 mt-2 text-center leading-tight">インフォ</span>
+          </button>
+          <!-- 今後の予定 -->
+          <button onclick="openFullscreen('schedule')" class="grid-menu-item">
+            <div class="grid-menu-icon"><i data-lucide="calendar" class="w-5 h-5"></i></div>
+            <span class="text-[10px] font-bold text-gray-700 mt-2 text-center leading-tight">今後の予定</span>
+          </button>
+          <!-- ランク -->
+          <button onclick="openFullscreen('rank')" class="grid-menu-item">
+            <div class="grid-menu-icon"><i data-lucide="trending-up" class="w-5 h-5"></i></div>
+            <span class="text-[10px] font-bold text-gray-700 mt-2 text-center leading-tight">ランク</span>
+          </button>
+          <!-- プレイリスト -->
+          <button onclick="openFullscreen('playlist')" class="grid-menu-item">
+            <div class="grid-menu-icon"><i data-lucide="music" class="w-5 h-5"></i></div>
+            <span class="text-[10px] font-bold text-gray-700 mt-2 text-center leading-tight">プレイリスト作成</span>
+          </button>
+          <!-- FAQ -->
+          <button onclick="openFullscreen('faq')" class="grid-menu-item">
+            <div class="grid-menu-icon"><i data-lucide="help-circle" class="w-5 h-5"></i></div>
+            <span class="text-[10px] font-bold text-gray-700 mt-2 text-center leading-tight">FAQ<br>よくある質問</span>
+          </button>
+          <!-- OTHERS -->
+          <button onclick="openFullscreen('others')" class="grid-menu-item">
+            <div class="grid-menu-icon"><i data-lucide="file-text" class="w-5 h-5"></i></div>
+            <span class="text-[10px] font-bold text-gray-700 mt-2 text-center leading-tight">OTHERS</span>
+          </button>
+          <!-- アカウント -->
+          <button onclick="openFullscreen('account')" class="grid-menu-item">
+            <div class="grid-menu-icon"><i data-lucide="user" class="w-5 h-5"></i></div>
+            <span class="text-[10px] font-bold text-gray-700 mt-2 text-center leading-tight">アカウント</span>
+          </button>
+          
+          <!-- 空白プレースホルダー 1 -->
+          <div class="flex flex-col items-center opacity-25">
+            <div class="w-12 h-12 rounded-full border border-dashed border-gray-300 flex items-center justify-center text-gray-300">
+              <i data-lucide="minus" class="w-4 h-4"></i>
+            </div>
+            <span class="text-[10px] font-bold text-gray-300 mt-2 text-center leading-tight">-</span>
+          </div>
+        </div>
+
+        <!-- SNS -->
+        <section class="mt-6 px-4">
+          <div class="flex justify-between items-center mb-3">
+            <h2 class="text-lg font-bold text-gray-900 tracking-tight">SNS</h2>
+            <span class="text-[10px] text-gray-400 font-bold bg-gray-100 px-2 py-0.5 rounded-full">タップで外部起動</span>
+          </div>
+
+          <div class="bg-white rounded-xl p-4 border border-gray-100 shadow-sm mb-4">
+            <h3 class="text-sm font-bold text-gray-800 mb-3 flex items-center gap-1.5">
+              <span class="w-1.5 h-3 bg-indigo-500 rounded-full"></span>
+              公式アカウント ＆ 予定表
+            </h3>
+            <!-- 横スクロールコンテナ -->
+            <div class="flex gap-2.5 overflow-x-auto dynamic-scroll-area pb-2" style="touch-action: pan-x;">
+              <!-- インスタ -->
+              <div onclick="showPlatformDetail('Instagram', 'INSTAGRAM')" class="flex flex-col items-center flex-shrink-0 w-20 cursor-pointer active:scale-95 transition-transform">
+                <div class="w-11 h-11 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 text-white flex items-center justify-center border border-pink-100 mb-1.5 shadow-sm">
+                  <i data-lucide="instagram" class="w-4.5 h-4.5"></i>
+                </div>
+                <span class="text-[10px] font-bold text-gray-700 text-center uppercase tracking-tight leading-tight">Instagram</span>
+              </div>
+              <!-- Twitter / X -->
+              <div onclick="showPlatformDetail('Twitter', 'TWITTER')" class="flex flex-col items-center flex-shrink-0 w-20 cursor-pointer active:scale-95 transition-transform">
+                <div class="w-11 h-11 rounded-full bg-black text-white flex items-center justify-center border border-gray-800 mb-1.5 shadow-sm">
+                  <i data-lucide="twitter" class="w-4.5 h-4.5"></i>
+                </div>
+                <span class="text-[10px] font-bold text-gray-700 text-center uppercase tracking-tight leading-tight">X</span>
+              </div>
+              <!-- Youtube -->
+              <div onclick="showPlatformDetail('Youtube', 'YOUTUBE')" class="flex flex-col items-center flex-shrink-0 w-20 cursor-pointer active:scale-95 transition-transform">
+                <div class="w-11 h-11 rounded-full bg-red-600 text-white flex items-center justify-center border border-red-500 mb-1.5 shadow-sm">
+                  <i data-lucide="youtube" class="w-4.5 h-4.5"></i>
+                </div>
+                <span class="text-[10px] font-bold text-gray-700 text-center uppercase tracking-tight leading-tight">YouTube</span>
+              </div>
+              <!-- 年間予定表 -->
+              <div onclick="showPlatformDetail('年間予定表', 'YEARLY')" class="flex flex-col items-center flex-shrink-0 w-20 cursor-pointer active:scale-95 transition-transform">
+                <div class="w-11 h-11 rounded-full bg-emerald-500 text-white flex items-center justify-center border border-emerald-400 mb-1.5 shadow-sm">
+                  <i data-lucide="calendar-days" class="w-4.5 h-4.5"></i>
+                </div>
+                <span class="text-[10px] font-bold text-gray-700 text-center uppercase tracking-tight leading-tight">予定表</span>
+              </div>
+              <!-- 裏方アプリ -->
+              <div onclick="showPlatformDetail('裏方アプリ', 'BACKSTAGE')" class="flex flex-col items-center flex-shrink-0 w-20 cursor-pointer active:scale-95 transition-transform">
+                <div class="w-11 h-11 rounded-full bg-slate-800 text-white flex items-center justify-center border border-slate-700 mb-1.5 shadow-sm">
+                  <i data-lucide="terminal" class="w-4.5 h-4.5"></i>
+                </div>
+                <span class="text-[10px] font-bold text-gray-700 text-center uppercase tracking-tight leading-tight">裏方</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ニュースニュース -->
+        <section class="mt-4 px-4">
+          <div class="flex justify-between items-center mb-3">
+            <h2 class="text-lg font-bold text-gray-900 tracking-tight">ニュース</h2>
+            <button onclick="openFullscreen('info')" class="text-xs text-gray-500 font-medium hover:text-gray-900">すべて見る</button>
+          </div>
+          <div class="space-y-3">
+            <div class="p-3 standard-card flex justify-between items-center cursor-pointer hover:bg-gray-50" onclick="showNewsDetail('今後の予定をアップデートしました！', '来月開催予定 of ファンイベント、およびPococha配信スケジュールの最新版を「今後の予定」に掲載しました。詳細はカレンダーよりご確認ください。')">
+              <div class="flex-1 pr-4">
+                <div class="text-[10px] font-bold text-yellow-600 mb-1">2026.06.08</div>
+                <p class="text-xs font-bold text-gray-800 leading-snug">今後の予定をアップデートしました！</p>
+              </div>
+              <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400 flex-shrink-0"></i>
+            </div>
+            <div class="p-3 standard-card flex justify-between items-center cursor-pointer hover:bg-gray-50" onclick="showNewsDetail('今月のコアファン特典について', '現在のランクに基づいた限定配信アーカイブおよびデジタルコンテンツを公開しました。「ランク」ページより到達特典の確認・受取を行ってください。')">
+              <div class="flex-1 pr-4">
+                <div class="text-[10px] font-bold text-yellow-600 mb-1">2026.06.05</div>
+                <p class="text-xs font-bold text-gray-800 leading-snug">今月のコアファン特典について</p>
+              </div>
+              <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400 flex-shrink-0"></i>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- ====================================================================
+           [ARTIST SCREEN] (マイバンド機能搭載)
+           ==================================================================== -->
+      <div id="screen-artist" class="screen-content hidden">
+        <!-- 固定ヘッダー -->
+        <header class="bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between sticky top-0 z-30 shadow-sm flex-shrink-0">
+          <div class="w-8"></div>
+          <div class="text-center flex-1">
+            <h2 class="text-sm font-black text-gray-900 tracking-wider">ARTIST</h2>
+            <p id="artist-header-event-sub" class="text-[9px] font-bold text-indigo-600 truncate mt-0.5">最新イベント読込中...</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <!-- 新規作成登録ボタンを絞り込みの左隣に設置 -->
+            <button onclick="openFullscreen('create-band')" class="w-8 h-8 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-100 active:scale-90 transition-transform" aria-label="新規登録">
+              <i data-lucide="plus" class="w-4.5 h-4.5"></i>
+            </button>
+            <button onclick="setArtistFilterTab('favorites')" id="header-art-fav" class="w-8 h-8 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-100 active:scale-90 transition-transform">
+              <i data-lucide="sliders-horizontal" class="w-4.5 h-4.5"></i>
+            </button>
+            <button onclick="focusSearch()" class="w-8 h-8 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-100 active:scale-90 transition-transform">
+              <i data-lucide="search" class="w-4.5 h-4.5"></i>
+            </button>
+          </div>
+        </header>
+
+        <!-- 日付/マイバンド選択タブバー -->
+        <div class="bg-white border-b border-gray-200 sticky top-[53px] z-30 flex justify-between items-center px-2 flex-shrink-0">
+          <button onclick="setArtistFilterTab('all')" id="tab-art-all" class="flex-1 py-3 text-xs font-black tracking-wide border-b-2 border-gray-900 text-gray-900 transition-all text-center">ALL</button>
+          <button onclick="setArtistFilterTab('day1')" id="tab-art-day1" class="flex-1 py-3 text-xs font-bold tracking-wide border-b-2 border-transparent text-gray-400 hover:text-gray-600 transition-all text-center">Day 1</button>
+          <button onclick="setArtistFilterTab('day2')" id="tab-art-day2" class="flex-1 py-3 text-xs font-bold tracking-wide border-b-2 border-transparent text-gray-400 hover:text-gray-600 transition-all text-center">Day 2</button>
+          <button onclick="setArtistFilterTab('favorites')" id="tab-art-favorites" class="flex-1 py-3 text-xs font-bold tracking-wide border-b-2 border-transparent text-gray-400 hover:text-gray-600 transition-all text-center">マイバンド</button>
+        </div>
+
+        <!-- 検索バー -->
+        <div id="artist-search-bar" class="p-3 bg-white border-b border-gray-100 hidden flex-shrink-0">
+          <div class="relative">
+            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
+            <input type="text" id="artist-input-search" oninput="filterArtists()" placeholder="アーティスト名で検索..." class="w-full bg-gray-50 border border-gray-200 rounded-xl py-2 pl-9 pr-4 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400">
+          </div>
+        </div>
+
+        <div class="px-4 py-1 bg-gray-100 text-xs font-bold text-gray-800 border-b border-gray-200 sticky top-[95px] z-20 flex-shrink-0">登録アーティスト一覧 (タップで詳細)</div>
+        <div id="artist-grid-container" class="grid grid-cols-2 gap-x-2 gap-y-4 p-2 bg-white animate-fade-in"></div>
+      </div>
+
+      <!-- ====================================================================
+           [TIMETABLE SCREEN] (会場1つに最適化されたシンプルな出演順)
+           ==================================================================== -->
+      <div id="screen-timetable" class="screen-content hidden p-4">
+        <div class="flex justify-between items-center mb-4 flex-shrink-0">
+          <h2 class="text-xl font-bold text-gray-900 tracking-tight">タイムテーブル</h2>
+          <div class="inline-flex bg-gray-200 p-0.5 rounded-lg">
+            <button onclick="setTimetableDate(1)" id="btn-tt-day1" class="px-3 py-1 rounded-md text-xs font-bold bg-white text-gray-900 shadow-sm">Day 1</button>
+            <button onclick="setTimetableDate(2)" id="btn-tt-day2" class="px-3 py-1 rounded-md text-xs font-bold text-gray-600">Day 2</button>
+          </div>
+        </div>
+
+        <div class="flex gap-2 mb-4 flex-shrink-0">
+          <button onclick="setTimetableMode('all')" id="btn-tt-all" class="flex-1 py-2 text-xs font-bold rounded-xl transition-all bg-gray-900 text-white">全バンド</button>
+          <button onclick="setTimetableMode('my')" id="btn-tt-my" class="flex-1 py-2 text-xs font-bold rounded-xl transition-all bg-white border border-gray-200 text-gray-700 flex items-center justify-center gap-1.5">
+            <i data-lucide="heart" class="w-3.5 h-3.5 text-red-500"></i>
+            <span>マイバンド タイムテーブル</span>
+          </button>
+        </div>
+
+        <!-- 会場が1つのため横スクロールなしのスマートなリスト構成 -->
+        <div id="timetable-board-container" class="border border-gray-100 rounded-2xl bg-white shadow-sm p-4 overflow-y-auto" style="touch-action: pan-y;">
+          <div class="w-full" id="timetable-stages-row"></div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           [RESERVATION SCREEN] (合わせ予約)
+           ==================================================================== -->
+      <div id="screen-reservation" class="screen-content hidden p-4">
+        <div class="flex justify-between items-center mb-2 flex-shrink-0">
+          <h2 class="text-xl font-bold text-gray-900 tracking-tight">合わせ予約</h2>
+          <span class="text-[10px] font-black text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full uppercase tracking-wider">グループ同調中</span>
+        </div>
+        <p class="text-xs text-gray-500 mb-4">メンバーと予定を合わせて部室やライブイベントを同時予約するためのシミュレータです。</p>
+
+        <!-- グループ共有カード -->
+        <div class="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm mb-4">
+          <div class="flex justify-between items-center mb-3">
+            <div>
+              <div class="text-[9px] font-black text-gray-400 uppercase tracking-wider">GROUP CODE</div>
+              <div class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                <i data-lucide="users" class="w-4 h-4 text-slate-500"></i>
+                <span id="active-group-code" class="font-mono tracking-wider">SAKAE105</span>
+              </div>
+            </div>
+            <button onclick="copyGroupCode()" class="px-2.5 py-1.5 bg-gray-100 text-gray-700 hover:bg-gray-200 text-[10px] font-bold rounded-lg flex items-center gap-1 transition-colors">
+              <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+              <span>コードコピー</span>
+            </button>
+          </div>
+          <!-- メンバーリスト -->
+          <div class="border-t border-gray-50 pt-3 flex items-center gap-2 overflow-x-auto dynamic-scroll-area">
+            <div class="flex items-center gap-1.5 bg-indigo-50 border border-indigo-100/50 rounded-full px-2.5 py-1 text-xs font-black text-indigo-700 flex-shrink-0">
+              <div class="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-ping"></div>
+              <span>あなた</span>
+            </div>
+            <div class="flex items-center gap-1.5 bg-slate-100 rounded-full px-2.5 py-1 text-xs font-bold text-slate-600 flex-shrink-0">
+              <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
+              <span>友達A (オンライン)</span>
+            </div>
+            <div class="flex items-center gap-1.5 bg-slate-100 rounded-full px-2.5 py-1 text-xs font-bold text-slate-600 flex-shrink-0">
+              <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
+              <span>友達B (オンライン)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 日付選択＆タイムスロット -->
+        <div class="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
+          <div class="flex justify-between items-center mb-4 pb-2 border-b border-gray-100">
+            <h3 class="text-xs font-black text-gray-800 uppercase tracking-wider flex items-center gap-1.5">
+              <i data-lucide="calendar" class="w-4 h-4 text-gray-400"></i>
+              候補日程を選択
+            </h3>
+            <div class="inline-flex bg-gray-100 p-0.5 rounded-lg">
+              <button onclick="setReservationDate(1)" id="btn-res-day1" class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-white text-gray-900 shadow-sm">Day 1</button>
+              <button onclick="setReservationDate(2)" id="btn-res-day2" class="px-2.5 py-1 rounded-md text-[10px] font-bold text-gray-600">Day 2</button>
+            </div>
+          </div>
+
+          <!-- 時間枠スロットリスト -->
+          <div id="reservation-slots-container" class="space-y-2.5 mb-5">
+            <!-- 動的に生成されます -->
+          </div>
+
+          <!-- 予約確定セクション -->
+          <button onclick="confirmReservation()" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-xl text-xs flex items-center justify-center gap-2 active:scale-95 transition-all shadow-md">
+            <i data-lucide="calendar-check" class="w-4 h-4"></i>
+            <span>合わせ予約を確定する</span>
+          </button>
+          <p class="text-[9px] text-gray-400 text-center mt-2">※お互いの「希望(◯)」が一致した枠が自動的に最優先予約されます。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         [FLOATING BOTTOM NAVIGATION] - iOSセーフエリア考慮
+         ==================================================================== -->
+    <nav class="absolute bottom-6 left-4 right-4 bg-white/95 backdrop-blur-md border border-gray-100 rounded-[32px] py-2 px-3 shadow-xl flex justify-around items-center z-50 mb-[env(safe-area-inset-bottom)]">
+      <button onclick="switchScreen('home')" id="nav-home" class="flex items-center gap-1.5 py-2 px-4 rounded-full transition-all duration-300 bg-gray-100 font-bold text-gray-900">
+        <i data-lucide="home" class="w-5 h-5"></i>
+        <span class="text-xs uppercase tracking-wide">HOME</span>
+      </button>
+      <button onclick="switchScreen('artist')" id="nav-artist" class="flex items-center gap-1.5 py-2 px-4 rounded-full transition-all duration-300 text-gray-500">
+        <i data-lucide="music" class="w-5 h-5"></i>
+        <span class="text-xs uppercase tracking-wide hidden">ARTIST</span>
+      </button>
+      <button onclick="switchScreen('timetable')" id="nav-timetable" class="flex items-center gap-1.5 py-2 px-4 rounded-full transition-all duration-300 text-gray-500">
+        <i data-lucide="calendar" class="w-5 h-5"></i>
+        <span class="text-xs uppercase tracking-wide hidden">TIMETABLE</span>
+      </button>
+      <button onclick="switchScreen('reservation')" id="nav-reservation" class="flex items-center gap-1.5 py-2 px-4 rounded-full transition-all duration-300 text-gray-500">
+        <i data-lucide="calendar-check" class="w-5 h-5"></i>
+        <span class="text-xs uppercase tracking-wide hidden">合わせ予約</span>
+      </button>
+    </nav>
+
+    <!-- ====================================================================
+         [FULLSCREEN PAGES CONTAINER]
+         ==================================================================== -->
+    <div id="fullscreen-container-overlay" class="absolute inset-0 bg-transparent z-[100] hidden">
+      <div id="fullscreen-pages-wrapper" class="w-full h-full bg-gray-50 pointer-events-auto translate-y-full screen-transition flex flex-col relative md:rounded-3xl overflow-hidden">
+        
+        <!-- 固定ナビゲーションヘッダー -->
+        <header class="bg-white border-b border-gray-100 px-4 py-4 flex items-center justify-between flex-shrink-0 z-10 shadow-sm pt-[calc(1rem+env(safe-area-inset-top))]">
+          <button onclick="closeFullscreen()" class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-800 hover:bg-gray-200 active:scale-95 transition-all" aria-label="戻る">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+          </button>
+          <h3 id="fullscreen-header-title" class="text-sm font-black text-gray-900 tracking-wide text-center flex-1 pr-10">タイトル</h3>
+        </header>
+
+        <!-- スクロール可能なコンテンツエリア -->
+        <div class="flex-1 overflow-y-auto p-5 pb-24 pb-[calc(6rem+env(safe-area-inset-bottom))] no-scrollbar bg-gray-50 scrollable-area">
+          
+          <!-- [INFO] -->
+          <div id="full-content-info" class="full-subcontent hidden">
+            <div class="space-y-4">
+              <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+                <h4 class="text-xs font-bold text-gray-400 mb-1">配信・活動ポリシー</h4>
+                <p class="text-sm font-black text-gray-800">みなさまと楽しく繋がるための基本ルールです。</p>
+              </div>
+              <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+                <h4 class="text-xs font-bold text-gray-400 mb-1">主な配信時間</h4>
+                <p class="text-sm font-black text-gray-800">毎週 火・木・土曜日 21:00より生配信中</p>
+              </div>
+              <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+                <h4 class="text-xs font-bold text-gray-400 mb-1">ファンレター・プレゼントについて</h4>
+                <p class="text-sm font-medium text-gray-700 leading-relaxed">宛先や規約等はオフィシャル事務局の指定方法に従ってください。いつも温かい応援をありがとうございます！</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- [SCHEDULE] - Firestoreのイベント情報からリアルタイムに構築される動的コンテンツ -->
+          <div id="full-content-schedule" class="full-subcontent hidden">
+            <div class="space-y-4 max-w-sm mx-auto">
+              <p class="text-xs text-gray-500 mb-2">Firestore（events コレクション）から自動取得された最新のイベント予定一覧です。</p>
+              
+              <!-- イベント表示用コンテナ -->
+              <div id="dynamic-events-list-container" class="space-y-3.5">
+                <div class="text-center py-12 text-gray-400 text-xs">
+                  <div class="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                  予定情報を同期中...
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- [RANK] -->
+          <div id="full-content-rank" class="full-subcontent hidden">
+            <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-lg text-center max-w-sm mx-auto">
+              <div class="w-16 h-16 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-600 mx-auto mb-3 border border-yellow-200 shadow-inner">
+                <i data-lucide="crown" class="w-8 h-8"></i>
+              </div>
+              <div class="text-[10px] font-black text-yellow-600 tracking-widest uppercase mb-1">CURRENT RANK</div>
+              <div class="text-lg font-black text-gray-900 mb-2">プラチナ・コアメンバー</div>
+              <p class="text-[10px] text-gray-400 font-bold mb-6">現在のファンランク：Lv.24</p>
+              <div class="space-y-1.5 text-left mb-6">
+                <div class="flex justify-between text-[10px] font-black text-gray-400 uppercase">
+                  <span>NEXT LEVEL (Lv.25)</span>
+                  <span>75%</span>
+                </div>
+                <div class="w-full h-3 bg-gray-100 rounded-full overflow-hidden border border-gray-200/50 shadow-inner">
+                  <div class="h-full bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-full" style="width: 75%;"></div>
+                </div>
+                <p class="text-[9px] text-gray-400 text-right font-medium">次のレベルまで残り 2,500 pts</p>
+              </div>
+              <div class="text-left bg-gray-50 border border-gray-100 p-4 rounded-xl space-y-2">
+                <h4 class="text-xs font-black text-gray-700 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                  <i data-lucide="gift" class="w-4 h-4 text-gray-500"></i>
+                  到達済みアンロック特典
+                </h4>
+                <div class="flex items-center gap-2 text-xs font-bold text-gray-600">
+                  <i data-lucide="check-circle-2" class="w-4 h-4 text-green-500"></i>
+                  <span>限定ディスコードチャンネル参加権</span>
+                </div>
+                <div class="flex items-center gap-2 text-xs font-bold text-gray-600">
+                  <i data-lucide="check-circle-2" class="w-4 h-4 text-green-500"></i>
+                  <span>バースデー個別ビデオメッセージ</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- [PLAYLIST] -->
+          <div id="full-content-playlist" class="full-subcontent hidden">
+            <p class="text-xs text-gray-500 mb-4">マイバンド（ハートボタン）に登録したアーティストを解析し、体験型スマートプレイリストを自動構成します。</p>
+            <div class="bg-yellow-50 rounded-2xl p-4 border border-yellow-100 mb-5">
+              <div class="text-xs font-bold text-yellow-800 mb-1 flex items-center gap-1.5">
+                <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                マッチング情報
+              </div>
+              <p class="text-xs text-yellow-700 leading-relaxed">マイバンド登録されたアーティストのジャンル、出演順から快適な試聴プレイリストを作成します。</p>
+            </div>
+            <button onclick="generatePlaylistMock()" class="w-full py-4 bg-gray-900 hover:bg-gray-800 text-white rounded-2xl text-xs font-black active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-md">
+              <i data-lucide="sparkles" class="w-4 h-4 text-yellow-400"></i>
+              <span>プレイリストを自動生成する</span>
+            </button>
+            <div id="playlist-result" class="mt-5 space-y-2 hidden"></div>
+          </div>
+
+          <!-- [FAQ] -->
+          <div id="full-content-faq" class="full-subcontent hidden">
+            <div class="space-y-3">
+              <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+                <div class="text-sm font-bold text-gray-800 flex items-center gap-2">
+                  <span class="text-xs font-extrabold text-yellow-500 bg-yellow-50 px-1.5 py-0.5 rounded border border-yellow-200">Q</span>
+                  <span>ファンクラブに入会するには？</span>
+                </div>
+                <div class="text-xs text-gray-500 mt-2 pl-6 leading-relaxed border-t border-gray-50 pt-2">
+                  A. リンク集（OTHERS）にある公式オンラインサロン、またはPococha of アプリ内にてコアメンバー登録をしていただくことで入会が完了します。
+                </div>
+              </div>
+              <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+                <div class="text-sm font-bold text-gray-800 flex items-center gap-2">
+                  <span class="text-xs font-extrabold text-yellow-500 bg-yellow-50 px-1.5 py-0.5 rounded border border-yellow-200">Q</span>
+                  <span>配信スケジュールは固定ですか？</span>
+                </div>
+                <div class="text-xs text-gray-500 mt-2 pl-6 leading-relaxed border-t border-gray-50 pt-2">
+                  A. ベーシックに毎週火・木・土曜の21:00開始ですが、突発の配信やコラボイベント等が生じる場合がございます。最新スケジュールは「今後の予定」ページにて常時更新されます。
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- [OTHERS] -->
+          <div id="full-content-others" class="full-subcontent hidden">
+            <div class="space-y-3">
+              <button onclick="window.open('https://www.sorairosystem.com/', '_blank')" class="w-full py-4 px-4 bg-white border border-gray-100 rounded-2xl text-left text-xs font-bold text-gray-700 flex justify-between items-center hover:bg-gray-50 shadow-sm transition-colors">
+                <span>公式ウェブサイト</span>
+                <i data-lucide="external-link" class="w-4 h-4 text-gray-400"></i>
+              </button>
+              <button onclick="window.open('https://www.sorairosystem.com/lab/terms-of-service', '_blank')" class="w-full py-4 px-4 bg-white border border-gray-100 rounded-2xl text-left text-xs font-bold text-gray-700 flex justify-between items-center hover:bg-gray-50 shadow-sm transition-colors">
+                <span>利用規約</span>
+                <i data-lucide="external-link" class="w-4 h-4 text-gray-400"></i>
+              </button>
+              <button onclick="window.open('https://www.sorairosystem.com/lab/privacy-polycy', '_blank')" class="w-full py-4 px-4 bg-white border border-gray-100 rounded-2xl text-left text-xs font-bold text-gray-700 flex justify-between items-center hover:bg-gray-50 shadow-sm transition-colors">
+                <span>プライバシーポリシー</span>
+                <i data-lucide="external-link" class="w-4 h-4 text-gray-400"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- [PLATFORM DETAIL] -->
+          <div id="full-content-platform" class="full-subcontent hidden">
+            <div class="flex items-center gap-2.5 mb-4">
+              <span id="platform-status-badge" class="px-2.5 py-1 text-[10px] font-black rounded-lg">稼働状況</span>
+              <span id="platform-desc" class="text-xs font-bold text-gray-400">最終更新: 本日12:00</span>
+            </div>
+            <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+              <h4 class="text-xs font-black text-gray-400 mb-3 uppercase tracking-wider flex items-center gap-1.5">
+                <i data-lucide="activity" class="w-4 h-4 text-gray-400"></i>
+                詳細ログ ＆ アプリ連携
+              </h4>
+              <div id="platform-details-container" class="space-y-3"></div>
+            </div>
+          </div>
+
+          <!-- [NEWS DETAIL] -->
+          <div id="full-content-news" class="full-subcontent hidden">
+            <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+              <div id="news-date" class="text-[10px] font-black text-yellow-600 mb-2">2026.06.08</div>
+              <p id="news-body" class="text-xs text-gray-600 leading-relaxed font-medium">ニュース本文</p>
+            </div>
+          </div>
+
+          <!-- [NOTIFICATIONS] -->
+          <div id="full-content-notifications" class="full-subcontent hidden">
+            <div class="space-y-3">
+              <div class="p-4 bg-yellow-50 border border-yellow-100 rounded-2xl flex gap-3 shadow-sm">
+                <div class="w-9 h-9 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-600 flex-shrink-0">
+                  <i data-lucide="bell" class="w-4 h-4"></i>
+                </div>
+                <div>
+                  <div class="text-[9px] font-black text-yellow-600">本日 21:00</div>
+                  <p class="text-xs font-bold text-gray-800 leading-snug mt-0.5">Pococha配信ルームが開きます！今夜はリクエスト歌枠です。</p>
+                </div>
+              </div>
+              <div class="p-4 bg-white border border-gray-100 rounded-2xl flex gap-3 shadow-sm">
+                <div class="w-9 h-9 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 flex-shrink-0 border border-gray-100">
+                  <i data-lucide="bell" class="w-4 h-4"></i>
+                </div>
+                <div>
+                  <div class="text-[9px] font-black text-gray-400">昨日</div>
+                  <p class="text-xs font-medium text-gray-600 leading-snug mt-0.5">スケジュールカレンダーを「今後の予定」に更新掲載しました。</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- [ACCOUNT] -->
+          <div id="full-content-account" class="full-subcontent hidden">
+            <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-lg text-center max-w-sm mx-auto">
+              <div class="w-16 h-16 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 mx-auto mb-3 shadow-inner">
+                <i data-lucide="user" class="w-8 h-8"></i>
+              </div>
+              <div class="text-[10px] font-black text-indigo-600 tracking-widest uppercase mb-1">MEMBER PROFILE</div>
+              <div class="text-lg font-black text-gray-900 mb-1">ゲスト ユーザー</div>
+              <p class="text-[10px] text-gray-400 font-bold mb-6">ID: private_user_105</p>
+              
+              <div class="space-y-3.5 text-left bg-gray-50 border border-gray-100 p-4 rounded-xl">
+                <div class="flex justify-between items-center text-xs font-bold text-gray-700">
+                  <span>会員ステータス</span>
+                  <span class="text-indigo-600">一般会員</span>
+                </div>
+                <div class="flex justify-between items-center text-xs font-bold text-gray-700 pt-2 border-t border-gray-200/50">
+                  <span>メールアドレス</span>
+                  <span class="text-gray-500">未設定</span>
+                </div>
+                <div class="flex justify-between items-center text-xs font-bold text-gray-700 pt-2 border-t border-gray-200/50">
+                  <span>連携ログイン</span>
+                  <span class="text-gray-500">未連携</span>
+                </div>
+              </div>
+              
+              <button onclick="showToast('アカウント設定機能は現在準備中です。')" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-xl text-xs mt-6 active:scale-95 transition-all shadow-md">
+                プロフィールの編集
+              </button>
+            </div>
+          </div>
+
+          <!-- [SETTINGS] -->
+          <div id="full-content-settings" class="full-subcontent hidden">
+            
+            <!-- ローカルプッシュ通知制御デモ -->
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
+              <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-2.5">システムプッシュ通知設定</h4>
+              <button onclick="requestNotificationPermission()" class="w-full py-3 bg-yellow-400 hover:bg-yellow-500 text-gray-950 font-black rounded-xl text-xs flex items-center justify-center gap-2 active:scale-95 transition-all shadow-sm">
+                <i data-lucide="shield-alert" class="w-4 h-4"></i>
+                <span>通知許可を申請する</span>
+              </button>
+              <p class="text-[9px] text-gray-400 mt-2 font-medium leading-relaxed">許可すると、タイムテーブル公開や抽選結果 of Push通知が直接端末に届くようになります。</p>
+            </div>
+
+            <!-- 通知設定グループ -->
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4 mb-4">
+              <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1">通知スイッチ</h4>
+              
+              <!-- 部室抽選通知 -->
+              <div class="flex justify-between items-center pb-3 border-b border-gray-50">
+                <div class="pr-4">
+                  <div class="text-xs font-bold text-gray-800">部室抽選通知</div>
+                  <div class="text-[9px] text-gray-400 mt-0.5">部室の抽選結果や新規スケジュール確定時にリアルタイムでお知らせします。</div>
+                </div>
+                <input type="checkbox" onchange="toggleNotificationConfig('部室抽選通知')" checked class="w-9 h-5 bg-gray-200 checked:bg-yellow-400 rounded-full cursor-pointer appearance-none relative transition-colors before:content-[''] before:absolute before:w-4 before:h-4 before:rounded-full before:bg-white before:top-0.5 before:left-0.5 checked:before:translate-x-4 before:transition-transform">
+              </div>
+              
+              <!-- タイムテーブル公開通知 -->
+              <div class="flex justify-between items-center pb-3 border-b border-gray-50">
+                <div class="pr-4">
+                  <div class="text-xs font-bold text-gray-800">タイムテーブル公開通知</div>
+                  <div class="text-[9px] text-gray-400 mt-0.5">新シーズンのタイムテーブル公開や編集が行われた際にお知らせします。</div>
+                </div>
+                <input type="checkbox" onchange="toggleNotificationConfig('タイムテーブル公開通知')" checked class="w-9 h-5 bg-gray-200 checked:bg-yellow-400 rounded-full cursor-pointer appearance-none relative transition-colors before:content-[''] before:absolute before:w-4 before:h-4 before:rounded-full before:bg-white before:top-0.5 before:left-0.5 checked:before:translate-x-4 before:transition-transform">
+              </div>
+              
+              <!-- その他通知 -->
+              <div class="flex justify-between items-center">
+                <div class="pr-4">
+                  <div class="text-xs font-bold text-gray-800">その他の通知</div>
+                  <div class="text-[9px] text-gray-400 mt-0.5">臨時メンテナンス、アップデート、イベント詳細等の情報を受け取ります。</div>
+                </div>
+                <input type="checkbox" onchange="toggleNotificationConfig('その他の通知')" checked class="w-9 h-5 bg-gray-200 checked:bg-yellow-400 rounded-full cursor-pointer appearance-none relative transition-colors before:content-[''] before:absolute before:w-4 before:h-4 before:rounded-full before:bg-white before:top-0.5 before:left-0.5 checked:before:translate-x-4 before:transition-transform">
+              </div>
+            </div>
+
+            <!-- テスト送信ボタン -->
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
+              <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-2.5">デバッグツール</h4>
+              <button onclick="sendTestPushNotification()" class="w-full py-3 bg-gray-900 hover:bg-gray-800 text-white font-black rounded-xl text-xs flex items-center justify-center gap-2 active:scale-95 transition-all shadow-md">
+                <i data-lucide="send" class="w-4 h-4"></i>
+                <span>テストPush通知を即時送信</span>
+              </button>
+            </div>
+
+            <!-- アプリ情報 -->
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3.5">
+              <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1">アプリ情報</h4>
+              <div class="flex justify-between items-center text-xs font-bold text-gray-700">
+                <span>バージョン</span>
+                <span class="text-gray-400 font-mono">v2.8.4</span>
+              </div>
+              <div class="flex justify-between items-center text-xs font-bold text-gray-700 pt-2.5 border-t border-gray-50">
+                <span>デベロッパー</span>
+                <span class="text-gray-400 font-bold text-gray-900">児島颯太朗:裏方部</span>
+              </div>
+              <div class="flex justify-between items-center text-xs font-bold text-gray-700 pt-2.5 border-t border-gray-50">
+                <span>ライセンス</span>
+                <span class="text-gray-400">Sorairostudio By Urakata app</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- [CREATE BAND] (ステージ会場選択は不要のため削除) -->
+          <div id="full-content-create-band" class="full-subcontent hidden">
+            <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm max-w-sm mx-auto space-y-4">
+              <h4 class="text-xs font-black text-gray-400 uppercase tracking-wider mb-2">バンド情報を入力</h4>
+              
+              <div>
+                <label class="block text-[11px] font-bold text-gray-500 mb-1">バンド名 <span class="text-red-500">*</span></label>
+                <input type="text" id="new-band-name" placeholder="例: エレファントカシマシ" class="w-full bg-gray-50 border border-gray-200 rounded-xl py-2 px-3 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400">
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold text-gray-500 mb-1">出演日程 <span class="text-red-500">*</span></label>
+                <select id="new-band-day-select" class="w-full bg-gray-50 border border-gray-200 rounded-xl py-2 px-3 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400">
+                  <!-- JSにより最新イベント開催日に基づいて動的に生成されます -->
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold text-gray-500 mb-1">アイコン画像URL (任意)</label>
+                <input type="text" id="new-band-icon" placeholder="https://..." class="w-full bg-gray-50 border border-gray-200 rounded-xl py-2 px-3 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400 font-mono">
+                <p class="text-[9px] text-gray-400 mt-1">空欄の場合はランダムなアーティスト画像が自動設定されます。</p>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold text-gray-500 mb-1">メンバーID (カンマ区切り、任意)</label>
+                <input type="text" id="new-band-members" placeholder="例: U086300, U2f915a" class="w-full bg-gray-50 border border-gray-200 rounded-xl py-2 px-3 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400 font-mono">
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold text-gray-500 mb-1">持ち曲・代表曲 (任意)</label>
+                <input type="text" id="new-band-song" placeholder="例: 今宵の月のように" class="w-full bg-gray-50 border border-gray-200 rounded-xl py-2 px-3 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400">
+              </div>
+
+              <div class="pt-2">
+                <button onclick="submitNewBand()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-xl text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-md">
+                  <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                  <span>Firestoreに新規登録する</span>
+                </button>
+                <p id="create-band-target-event" class="text-[9px] text-center text-gray-400 mt-2 font-medium">現在選択されている最新イベントへ自動登録されます。</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- [BAND DETAIL] - バンドタップ時に動的に構築される詳細画面 -->
+          <div id="full-content-band-detail" class="full-subcontent hidden">
+            <div class="bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-xl max-w-sm mx-auto">
+              <!-- カバー・アイコンエリア -->
+              <div class="relative aspect-[16/10] bg-gray-900">
+                <img id="band-detail-img" src="" alt="BAND VISUAL" class="w-full h-full object-cover opacity-90">
+                
+                <!-- ハートトグルボタン -->
+                <button id="band-detail-fav-btn" onclick="" class="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white active:scale-90 transition-transform">
+                  <i data-lucide="heart" class="w-5 h-5"></i>
+                </button>
+              </div>
+
+              <div class="p-5 space-y-4">
+                <div>
+                  <span id="band-detail-status" class="px-2.5 py-0.5 text-[9px] font-black rounded bg-indigo-50 text-indigo-600 border border-indigo-100 uppercase tracking-wide">アクティブ</span>
+                  <h3 id="band-detail-name" class="text-lg font-black text-gray-900 mt-1 leading-tight">バンド名</h3>
+                  <p id="band-detail-date" class="text-xs font-bold text-gray-400 mt-0.5">出演日時:</p>
+                </div>
+
+                <!-- メンバーリスト -->
+                <div class="space-y-2.5">
+                  <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5 pl-1">
+                    <i data-lucide="users" class="w-3.5 h-3.5"></i>
+                    所属メンバー
+                  </h4>
+                  <div id="band-detail-members-list" class="space-y-2">
+                    <!-- 動的にカード挿入 -->
+                  </div>
+                </div>
+
+                <!-- 持ち曲・楽曲一覧 -->
+                <div>
+                  <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                    <i data-lucide="music-2" class="w-3.5 h-3.5"></i>
+                    登録曲・演奏予定
+                  </h4>
+                  <div id="band-detail-songs-list" class="space-y-2">
+                    <!-- 動的に挿入 -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ==========================================================================
+    // [FIREBASE CONFIGURATION] Firebase構成 - 起動時マウント用の変数定義を先頭に固定化
+    // ==========================================================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI",
+      authDomain: "urakata-app.firebaseapp.com",
+      projectId: "urakata-app",
+      storageBucket: "urakata-app.firebasestorage.app",
+      messagingSenderId: "407777765696",
+      appId: "1:407777765696:web:045c2d94729022b4eab2a5",
+      measurementId: "G-9ZRMD26XNJ"
+    };
+
+    // ==========================================================================
+    // [UI CONFIGURATION] UI表示名マッピング
+    // ==========================================================================
+    const DISPLAY_NAMES = {
+      "info": "インフォメーション",
+      "schedule": "今後の予定",
+      "rank": "ランク・特典",
+      "playlist": "プレイリストジェネレータ",
+      "faq": "よくある質問",
+      "others": "OTHERS",
+      "notifications": "通知一覧",
+      "settings": "アプリ設定",
+      "platform": "SNS",
+      "account": "アカウント情報",
+      "news": "ニュース詳細",
+      "create-band": "新規バンド登録",
+      "band-detail": "バンド詳細情報"
+    };
+
+    // ==========================================================================
+    // [STATE] アプリケーションの状態管理 (マイバンド管理対応)
+    // ==========================================================================
+    let allArtists = []; // リアルタイム読込バンドデータ保持
+    let firebaseBandsList = []; // Firestoreキャッシュリスト
+    let favorites = JSON.parse(localStorage.getItem('sakae_favs') || '[]');
+    let artistFilterTab = 'all';
+    let currentTimetableDay = 1;
+    let timetableMode = 'all';
+
+    // 合わせ予約用のシミュレートステート
+    let reservationDate = 1; // 1: Day 1, 2: Day 2
+    let userReservations = [false, false, false, false]; // 自分の希望スロット [10時, 13時, 16時, 19時]
+    
+    // 友達のシミュレート希望データ
+    const friendsReservations = {
+      day1: {
+        friendA: [true, false, true, false],
+        friendB: [true, true, false, false]
+      },
+      day2: {
+        friendA: [false, true, true, false],
+        friendB: [false, true, false, true]
+      }
+    };
+
+    const reservationSlotsConfig = [
+      { id: 0, label: "10:00 - 12:00", name: "午前部室枠" },
+      { id: 1, label: "13:00 - 15:00", name: "午後昼枠" },
+      { id: 2, label: "16:00 - 18:00", name: "夕方部室枠" },
+      { id: 3, label: "19:00 - 21:00", name: "夜間練習枠" }
+    ];
+
+    // 最新イベント情報 ＆ 開催日程算出用ステート
+    let latestEventId = "";
+    let latestEventName = "最新イベント";
+    let eventDates = []; // イベント開催日（Dateオブジェクト配列）をFirestoreから動的にパースして保持
+    let bandsUnsubscribe = null;
+
+    // 英語月変換用マッピング
+    const MONTHS_EN = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+    // 日本語曜日ラベル定義
+    const WEEKDAYS_JP = ["日", "月", "火", "水", "木", "金", "土"];
+
+    // ==================== [LUCIDE ICON LOADER PROTECTION] ====================
+    function safeCreateIcons() {
+      try {
+        setTimeout(() => {
+          if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+          }
+        }, 50);
+      } catch (err) {
+        console.warn("Lucide icon generation error:", err);
+      }
+    }
+
+    // 日付指定用の期間全日程配列作成ヘルパー
+    function getDatesBetween(startDateStr, endDateStr) {
+      const dates = [];
+      if (!startDateStr) return dates;
+      try {
+        let current = new Date(startDateStr);
+        const end = endDateStr ? new Date(endDateStr) : new Date(startDateStr);
+        
+        let limit = 0;
+        while (current <= end && limit < 7) {
+          dates.push(new Date(current));
+          current.setDate(current.getDate() + 1);
+          limit++;
+        }
+      } catch (e) {
+        console.error("Date calculations error:", e);
+      }
+      return dates;
+    }
+
+    // 日程表現フォーマットヘルパー
+    function formatDateLabel(date, formatType) {
+      if (!date || isNaN(date.getTime())) return "日程未設定";
+      try {
+        const m = date.getMonth() + 1;
+        const d = date.getDate();
+        const w = WEEKDAYS_JP[date.getDay()];
+        
+        if (formatType === 'dot') {
+          return `${m}.${d} ${w}`; 
+        } else if (formatType === 'slash') {
+          return `${m}/${d}`; 
+        } else if (formatType === 'slash_week') {
+          return `${m}/${d} (${w})`; 
+        }
+        return `${m}/${d}`;
+      } catch (e) {
+        return "Day";
+      }
+    }
+
+    // 動的にUIの日付ラベルをすべて書き換えるエンジン
+    function updateUIDateLabels() {
+      try {
+        if (eventDates.length < 1) return;
+
+        // 1. ARTIST画面のフィルタータブ
+        const tabDay1 = document.getElementById("tab-art-day1");
+        const tabDay2 = document.getElementById("tab-art-day2");
+        if (tabDay1) {
+          tabDay1.textContent = formatDateLabel(eventDates[0], 'dot');
+        }
+        if (tabDay2) {
+          if (eventDates[1]) {
+            tabDay2.textContent = formatDateLabel(eventDates[1], 'dot');
+            tabDay2.style.display = "";
+          } else {
+            tabDay2.style.display = "none";
+          }
+        }
+
+        // 2. TIMETABLE画面の日程選択
+        const btnTt1 = document.getElementById("btn-tt-day1");
+        const btnTt2 = document.getElementById("btn-tt-day2");
+        if (btnTt1) {
+          btnTt1.textContent = formatDateLabel(eventDates[0], 'slash');
+        }
+        if (btnTt2) {
+          if (eventDates[1]) {
+            btnTt2.textContent = formatDateLabel(eventDates[1], 'slash');
+            btnTt2.style.display = "";
+          } else {
+            btnTt2.style.display = "none";
+          }
+        }
+
+        // 3. 合わせ予約画面の選択
+        const btnRes1 = document.getElementById("btn-res-day1");
+        const btnRes2 = document.getElementById("btn-res-day2");
+        if (btnRes1) {
+          btnRes1.textContent = formatDateLabel(eventDates[0], 'slash_week');
+        }
+        if (btnRes2) {
+          if (eventDates[1]) {
+            btnRes2.textContent = formatDateLabel(eventDates[1], 'slash_week');
+            btnRes2.style.display = "";
+          } else {
+            btnRes2.style.display = "none";
+          }
+        }
+
+        // 4. 新規バンド登録画面の日程プルダウンを最新状態に合わせて再描写
+        const daySelect = document.getElementById("new-band-day-select");
+        if (daySelect) {
+          daySelect.innerHTML = '';
+          eventDates.forEach((date, index) => {
+            const opt = document.createElement("option");
+            opt.value = index + 1; 
+            opt.textContent = `イベント ${index + 1}日目: ${formatDateLabel(date, 'slash_week')}`;
+            daySelect.appendChild(opt);
+          });
+        }
+      } catch (e) {
+        console.error("UI Date Labels Error:", e);
+      }
+    }
+
+    // ==========================================================================
+    // [FIREBASE REAL-TIME CONNECTOR] Firestore "bands" ＆ "events" 同期処理
+    // ==========================================================================
+    function initFirebaseAndLoadBands() {
+      try {
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        auth.signInAnonymously()
+          .then(() => {
+            db.collection("events").onSnapshot(eventSnapshot => {
+              try {
+                let eventsList = [];
+                eventSnapshot.forEach(doc => {
+                  const data = doc.data();
+                  eventsList.push({
+                    id: doc.id, 
+                    startDate: data.startDate || "",
+                    endDate: data.endDate || "",
+                    eventName: data.event || "名称未設定イベント"
+                  });
+                });
+
+                if (eventsList.length > 0) {
+                  // startDateフィールド基準で正確にソート
+                  eventsList.sort((a, b) => {
+                    const dateA = new Date(a.startDate || 0).getTime();
+                    const dateB = new Date(b.startDate || 0).getTime();
+                    return dateB - dateA; 
+                  });
+
+                  const latestEvent = eventsList[0];
+                  latestEventId = latestEvent.id;
+                  latestEventName = latestEvent.eventName;
+
+                  eventDates = getDatesBetween(latestEvent.startDate, latestEvent.endDate);
+                  if (eventDates.length === 0) {
+                    eventDates = [new Date(), new Date(Date.now() + 86400000)];
+                  }
+
+                  updateUIDateLabels();
+
+                  const subHeader = document.getElementById("artist-header-event-sub");
+                  if (subHeader) {
+                    subHeader.textContent = `対象: ${latestEventName}`;
+                  }
+
+                  renderFutureEventsList(eventsList);
+                  loadBandsWithFilter(db);
+                } else {
+                  showToast("イベントが登録されていません。");
+                }
+              } catch (e) {
+                console.error("Event list snapshot parsing error:", e);
+              }
+            }, error => {
+              console.error("Events loading error:", error);
+              showToast("イベント情報の取得に失敗しました。");
+            });
+          })
+          .catch(error => {
+            console.error("Firebase Auth Error:", error);
+            showToast("Firebaseの匿名認証に失敗しました。");
+          });
+      } catch (err) {
+        console.error("Firebase Initialization Error:", err);
+      }
+    }
+
+    // 最新のイベントをカレンダー風リストにレンダリングする
+    function renderFutureEventsList(eventsList) {
+      try {
+        const container = document.getElementById('dynamic-events-list-container');
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        if (eventsList.length === 0) {
+          container.innerHTML = `<div class="text-xs text-gray-400 p-8 text-center">開催予定のイベントはありません</div>`;
+          return;
+        }
+
+        eventsList.forEach(ev => {
+          const parsedDate = ev.startDate ? new Date(ev.startDate) : new Date();
+          const monthLabel = MONTHS_EN[parsedDate.getMonth()] || "EVENT";
+          const dayNum = parsedDate.getDate() || "--";
+
+          container.innerHTML += `
+            <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex gap-4 hover:border-indigo-100 transition-colors">
+              <div class="w-12 h-12 rounded-xl bg-indigo-50 flex flex-col items-center justify-center text-indigo-600 flex-shrink-0 border border-indigo-100/50">
+                <span class="text-[8px] font-black leading-none">${monthLabel}</span>
+                <span class="text-lg font-black leading-none mt-1">${dayNum}</span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="text-[9px] font-black text-indigo-600 uppercase tracking-wide">UPCOMING SHOW</div>
+                <h4 class="text-xs font-black text-gray-800 mt-0.5 truncate">${ev.eventName}</h4>
+                <p class="text-[10px] text-gray-400 mt-1 flex items-center gap-1">
+                  <i data-lucide="clock" class="w-3 h-3"></i>
+                  <span>期間: ${ev.startDate} 〜 ${ev.endDate || '当日限り'}</span>
+                </p>
+              </div>
+            </div>
+          `;
+        });
+        safeCreateIcons();
+      } catch (e) {
+        console.error("Render future events error:", e);
+      }
+    }
+
+    // 特定された最新イベントに登録されているバンドのみをFirestoreから抽出・表示
+    function loadBandsWithFilter(db) {
+      try {
+        if (bandsUnsubscribe) {
+          bandsUnsubscribe();
+        }
+
+        bandsUnsubscribe = db.collection("bands").onSnapshot(snapshot => {
+          try {
+            // 変数宣言の漏れを完璧に修復
+            let tempAllBands = [];
+            let latestBands = [];
+            firebaseBandsList = [];
+            
+            snapshot.forEach(doc => {
+              const data = doc.data();
+              const isArchived = data.isArchived || false;
+              
+              let isRegisteredToLatest = false;
+              if (Array.isArray(data.events)) {
+                isRegisteredToLatest = data.events.includes(latestEventId);
+              } else if (typeof data.events === 'string') {
+                isRegisteredToLatest = (data.events === latestEventId);
+              }
+
+              const assignedDay = parseInt(data.day, 10) || 1;
+
+              let dateStrLabel = latestEventName;
+              if (eventDates[assignedDay - 1]) {
+                dateStrLabel = formatDateLabel(eventDates[assignedDay - 1], 'dot');
+              }
+
+              const bandItem = {
+                id: doc.id,
+                name: data.name || "名称未設定バンド",
+                day: assignedDay,
+                time: dateStrLabel, 
+                stage: data.stage || "RAD HALL", 
+                badge: "", 
+                image: data.icon || "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=400&auto=format&fit=crop&q=80",
+                isFromFirestore: true,
+                isArchived: isArchived,
+                memberIds: data.memberIds || [],
+                songs: data.songs || []
+              };
+
+              tempAllBands.push(bandItem);
+              if (isRegisteredToLatest) {
+                latestBands.push(bandItem);
+              }
+            });
+
+            // フォールバック救済処理
+            if (latestBands.length > 0) {
+              firebaseBandsList = latestBands;
+              const subHeader = document.getElementById("artist-header-event-sub");
+              if (subHeader) {
+                subHeader.textContent = `対象: ${latestEventName}`;
+              }
+            } else {
+              firebaseBandsList = tempAllBands;
+              const subHeader = document.getElementById("artist-header-event-sub");
+              if (subHeader && tempAllBands.length > 0) {
+                subHeader.textContent = `全表示 (最新イベントにバンド未登録のため)`;
+              }
+            }
+
+            mergeArtistsMaster();
+          } catch (e) {
+            console.error("Bands parsing error inside snapshot:", e);
+          }
+        }, error => {
+          console.error("Firestore bands filtering error:", error);
+          showToast("最新バンド情報の取得に失敗しました。");
+        });
+      } catch (err) {
+        console.error("Bands loader error:", err);
+      }
+    }
+
+    function mergeArtistsMaster() {
+      try {
+        allArtists = [...firebaseBandsList];
+
+        if (!document.getElementById('screen-artist').classList.contains('hidden')) {
+          renderArtists();
+        }
+        if (!document.getElementById('screen-timetable').classList.contains('hidden')) {
+          renderTimetable();
+        }
+      } catch (e) {
+        console.error("Merge Master error:", e);
+      }
+    }
+
+    // ==================== [BAND DETAIL POPUP] ====================
+    function showBandDetail(artistId) {
+      try {
+        const a = allArtists.find(artist => artist.id === artistId);
+        if (!a) return;
+
+        const img = document.getElementById('band-detail-img');
+        const name = document.getElementById('band-detail-name');
+        const status = document.getElementById('band-detail-status');
+        const dateLabel = document.getElementById('band-detail-date');
+        const membersList = document.getElementById('band-detail-members-list');
+        const songsList = document.getElementById('band-detail-songs-list');
+        const favBtn = document.getElementById('band-detail-fav-btn');
+
+        img.src = a.image;
+        name.textContent = a.name;
+        dateLabel.textContent = `出演日程: Day ${a.day} (${a.time})`;
+        
+        if (a.isArchived) {
+          status.textContent = "アーカイブ保管中";
+          status.className = "px-2.5 py-0.5 text-[9px] font-black rounded bg-gray-100 text-gray-500 border border-gray-200 uppercase tracking-wide";
+        } else {
+          status.textContent = "アクティブ";
+          status.className = "px-2.5 py-0.5 text-[9px] font-black rounded bg-emerald-50 text-emerald-600 border border-emerald-100 uppercase tracking-wide";
+        }
+
+        const isFav = favorites.includes(a.id);
+        favBtn.onclick = () => {
+          toggleFavorite(a.id);
+          const updatedIsFav = favorites.includes(a.id);
+          favBtn.className = `absolute top-4 right-4 w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center active:scale-90 transition-transform ${updatedIsFav ? 'text-red-500' : 'text-white'}`;
+          favBtn.innerHTML = `<i data-lucide="heart" class="w-5 h-5 ${updatedIsFav ? 'fill-current' : ''}"></i>`;
+          safeCreateIcons();
+        };
+        favBtn.className = `absolute top-4 right-4 w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center active:scale-90 transition-transform ${isFav ? 'text-red-500' : 'text-white'}`;
+        favBtn.innerHTML = `<i data-lucide="heart" class="w-5 h-5 ${isFav ? 'fill-current' : ''}"></i>`;
+
+        // メンバーリストの非同期フェッチ処理（usersコレクションから本名とふりがなを引っ張る）
+        membersList.innerHTML = `
+          <div class="text-gray-400 py-4 flex items-center gap-2 text-xs font-bold animate-pulse pl-1">
+            <div class="w-3.5 h-3.5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+            <span>メンバーの個人情報を同期中...</span>
+          </div>
+        `;
+
+        const db = firebase.firestore();
+        const memberFetchPromises = (a.memberIds || []).map(memberId => {
+          return db.collection("users").doc(memberId).get()
+            .then(doc => {
+              if (doc.exists) {
+                const data = doc.data();
+                return {
+                  id: memberId,
+                  name: data.name || "名前未設定",
+                  kana: data.kana || "",
+                  part: data.part || "",
+                  icon: data.icon || "",
+                  faculty: data.faculty || "",
+                  year: data.year || ""
+                };
+              } else {
+                return { id: memberId, name: memberId, kana: "", part: "", icon: "", faculty: "", year: "" };
+              }
+            })
+            .catch(err => {
+              console.error("Member fetch error:", memberId, err);
+              return { id: memberId, name: memberId, kana: "", part: "", icon: "", faculty: "", year: "" };
+            });
+        });
+
+        Promise.all(memberFetchPromises).then(fetchedMembers => {
+          membersList.innerHTML = '';
+          if (fetchedMembers.length > 0) {
+            fetchedMembers.forEach((mem) => {
+              // アバターの取得（存在しなければデフォルトプレースホルダーアイコンを表示）
+              const avatarHtml = mem.icon 
+                ? `<img src="${mem.icon}" class="w-10 h-10 rounded-full object-cover flex-shrink-0 border border-gray-100 shadow-sm" alt="AVATAR">`
+                : `<div class="w-10 h-10 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 flex-shrink-0 shadow-sm"><i data-lucide="user" class="w-5 h-5"></i></div>`;
+
+              const kanaLabel = mem.kana ? `<span class="text-[9px] text-gray-400 font-medium leading-none mt-1 block">${mem.kana}</span>` : '';
+              
+              const partBadge = mem.part 
+                ? `<span class="text-[9px] font-black bg-indigo-50 text-indigo-600 border border-indigo-100 px-2.5 py-1 rounded-full uppercase tracking-wider flex-shrink-0">${mem.part}</span>` 
+                : '';
+
+              const schoolInfo = (mem.faculty || mem.year)
+                ? `<p class="text-[9px] text-gray-400 font-bold mt-1 tracking-tight leading-none">${mem.year ? mem.year + '年 / ' : ''}${mem.faculty || ''}</p>`
+                : '';
+
+              // IDテキストは排除し、ホーム画面のカードデザイン（standard-card）に寄せる
+              membersList.innerHTML += `
+                <div class="p-3 standard-card flex items-center gap-3 hover:bg-gray-50/50 transition-colors">
+                  ${avatarHtml}
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-baseline gap-1.5 flex-wrap">
+                      <span class="text-xs font-black text-gray-800 leading-none">${mem.name}</span>
+                    </div>
+                    ${kanaLabel}
+                    ${schoolInfo}
+                  </div>
+                  ${partBadge}
+                </div>
+              `;
+            });
+          } else {
+            membersList.innerHTML = `<div class="p-4 bg-white border border-gray-100 rounded-2xl text-center text-xs text-gray-400">登録メンバー情報はありません</div>`;
+          }
+          safeCreateIcons();
+        });
+
+        songsList.innerHTML = '';
+        if (a.songs && a.songs.length > 0) {
+          a.songs.forEach(song => {
+            let sTitle = typeof song === 'object' ? song.title : song;
+            let sDuration = typeof song === 'object' ? (song.duration || "3:30") : "3:30";
+            songsList.innerHTML += `
+              <div class="p-2.5 bg-gray-50 border border-gray-100 rounded-lg flex justify-between items-center text-xs">
+                <div class="flex items-center gap-2">
+                  <div class="w-6 h-6 bg-gray-200 rounded flex items-center justify-center text-[10px] font-black text-gray-500">TRACK</div>
+                  <span class="font-bold text-gray-800">${sTitle}</span>
+                </div>
+                <span class="text-[10px] text-gray-400 font-mono">${sDuration}</span>
+              </div>
+            `;
+          });
+        } else {
+          songsList.innerHTML = `<div class="p-3 bg-gray-50 rounded-xl text-center text-xs text-gray-400 border border-dashed border-gray-200">登録曲はありません</div>`;
+        }
+
+        openFullscreen('band-detail');
+        safeCreateIcons();
+      } catch (e) {
+        console.error("Band detail popup open error:", e);
+      }
+    }
+
+    // ==========================================================================
+    // [PUSH NOTIFICATION ENGINE] Web Notification API
+    // ==========================================================================
+    function requestNotificationPermission() {
+      try {
+        if (!("Notification" in window)) {
+          showToast("この端末のブラウザはプッシュ通知に対応していません。");
+          return;
+        }
+        
+        Notification.requestPermission().then(permission => {
+          if (permission === "granted") {
+            sendLocalNotification("通知がオンになりました", "今後の最新スケジュールやお知らせが端末に届くようになります。");
+          } else if (permission === "denied") {
+            showToast("通知がブロックされました。設定から通知を許可してください。");
+          }
+        });
+      } catch (e) {
+        console.error("Notification permission error:", e);
+      }
+    }
+
+    function sendLocalNotification(title, body) {
+      try {
+        if ("Notification" in window && Notification.permission === "granted") {
+          const options = {
+            body: body,
+            icon: "https://ul.h3z.jp/Fx4Jk0Dq.png"
+          };
+          new Notification(title, options);
+        } else {
+          showToast(title + ": " + body);
+        }
+      } catch (e) {
+        showToast(title + ": " + body);
+      }
+    }
+
+    function sendTestPushNotification() {
+      try {
+        if (!("Notification" in window)) {
+          showToast("通知機能非サポート：デモ通知をお送りします。");
+          return;
+        }
+        
+        if (Notification.permission === "default") {
+          requestNotificationPermission();
+        } else if (Notification.permission === "denied") {
+          showToast("ブラウザ設定で通知がブロックされています。アプリ内トーストで代用します。");
+          sendLocalNotification("テスト通知（代替トースト）", "通知ブロック時のテストテキストです。");
+        } else {
+          sendLocalNotification("テストプッシュ通知", "アプリ設定からのテスト発信です。正常に動作しています。");
+        }
+      } catch (e) {
+        console.error("Debug push trigger error:", e);
+      }
+    }
+
+    function toggleNotificationConfig(configName) {
+      sendLocalNotification("設定変更", configName + "の通知設定を変更しました。");
+    }
+
+    // ==========================================================================
+    // [SCREEN SYSTEM] メイン画面表示の切り替え
+    // ==========================================================================
+    function switchScreen(screenId) {
+      try {
+        closeFullscreen();
+
+        document.querySelectorAll('.screen-content').forEach(el => el.classList.add('hidden'));
+        const targetScreen = document.getElementById(`screen-${screenId}`);
+        if (targetScreen) {
+          targetScreen.classList.remove('hidden');
+        }
+
+        const navButtons = ['home', 'artist', 'timetable', 'reservation'];
+        navButtons.forEach(btn => {
+          const el = document.getElementById(`nav-${btn}`);
+          if (!el) return;
+          const label = el.querySelector('span');
+          if (btn === screenId) {
+            el.className = "flex items-center gap-1.5 py-2 px-4 rounded-full transition-all duration-300 bg-gray-100 font-bold text-gray-900";
+            if (label) label.classList.remove('hidden');
+          } else {
+            el.className = "flex items-center gap-1.5 py-2 px-4 rounded-full transition-all duration-300 text-gray-500";
+            if (label) label.classList.add('hidden');
+          }
+        });
+
+        document.getElementById('main-scroll-area').scrollTop = 0;
+
+        if (screenId === 'artist') {
+          renderArtists();
+        } else if (screenId === 'timetable') {
+          renderTimetable();
+        } else if (screenId === 'reservation') {
+          renderReservationSlots();
+        }
+      } catch (e) {
+        console.error("Tab switch execution error:", e);
+      }
+    }
+
+    // ==================== [MY BAND SYSTEM] ====================
+    function toggleFavorite(artistId) {
+      try {
+        if (favorites.includes(artistId)) {
+          favorites = favorites.filter(id => id !== artistId);
+        } else {
+          favorites.push(artistId);
+        }
+        localStorage.setItem('sakae_favs', JSON.stringify(favorites));
+        
+        if (!document.getElementById('screen-artist').classList.contains('hidden')) {
+          renderArtists();
+        }
+        if (!document.getElementById('screen-timetable').classList.contains('hidden')) {
+          renderTimetable();
+        }
+      } catch (e) {
+        console.error("Favorite toggle error:", e);
+      }
+    }
+
+    // ==================== [ARTIST COMPONENT CONTROLS] ====================
+    function setArtistFilterTab(tabType) {
+      try {
+        artistFilterTab = tabType;
+        const tabs = ['all', 'day1', 'day2', 'favorites'];
+        tabs.forEach(t => {
+          const btn = document.getElementById(`tab-art-${t}`);
+          if (!btn) return;
+          if (t === tabType) {
+            btn.className = "flex-1 py-3 text-xs font-black tracking-wide border-b-2 border-gray-900 text-gray-900 transition-all text-center";
+          } else {
+            btn.className = "flex-1 py-3 text-xs font-bold tracking-wide border-b-2 border-transparent text-gray-400 hover:text-gray-600 transition-all text-center";
+          }
+        });
+        renderArtists();
+      } catch (e) {
+        console.error("Set artist filter tab error:", e);
+      }
+    }
+
+    function focusSearch() {
+      try {
+        const searchBar = document.getElementById('artist-search-bar');
+        if (searchBar) {
+          searchBar.classList.toggle('hidden');
+          if (!searchBar.classList.contains('hidden')) {
+            const input = document.getElementById('artist-input-search');
+            if (input) input.focus();
+          }
+        }
+      } catch (e) {
+        console.error("Search focus error:", e);
+      }
+    }
+
+    function toggleFavoriteFilter() {
+      setArtistFilterTab('favorites');
+    }
+
+    function filterArtists() {
+      renderArtists();
+    }
+
+    function renderArtists() {
+      try {
+        const container = document.getElementById('artist-grid-container');
+        if (!container) return;
+        
+        container.innerHTML = '';
+        const searchInput = document.getElementById('artist-input-search');
+        const searchQuery = searchInput ? searchInput.value.toLowerCase() : "";
+
+        const filtered = allArtists.filter(a => {
+          let matchesTab = true;
+          if (artistFilterTab === 'day1') matchesTab = a.day === 1;
+          else if (artistFilterTab === 'day2') matchesTab = a.day === 2;
+          else if (artistFilterTab === 'favorites') matchesTab = favorites.includes(a.id);
+
+          const matchesSearch = a.name.toLowerCase().includes(searchQuery);
+          return matchesTab && matchesSearch;
+        });
+
+        if (filtered.length === 0) {
+          container.innerHTML = `
+            <div class="col-span-2 p-12 text-center text-gray-400 text-xs font-medium">該当するアーティストがいません</div>
+          `;
+          return;
+        }
+
+        filtered.forEach(a => {
+          const isFav = favorites.includes(a.id);
+          const card = document.createElement('div');
+          card.className = "flex flex-col relative group overflow-hidden bg-white rounded-lg shadow-sm border border-gray-100/60 cursor-pointer active:scale-[0.98] transition-all";
+          
+          card.onclick = (e) => {
+            if (e.target.closest('button')) return;
+            showBandDetail(a.id);
+          };
+
+          const dayLabel = a.isFromFirestore ? a.time : (a.day === 1 ? "Day 1" : "Day 2");
+
+          card.innerHTML = `
+            <div class="relative aspect-[4/3] bg-gray-100 overflow-hidden rounded-lg">
+              <img src="${a.image}" alt="${a.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+              <button onclick="toggleFavorite('${a.id}')" class="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/30 backdrop-blur-md flex items-center justify-center text-white active:scale-90 transition-transform z-20">
+                <i data-lucide="heart" class="w-4.5 h-4.5 ${isFav ? 'text-red-500 fill-current' : 'text-white'}"></i>
+              </button>
+            </div>
+            <div class="py-2.5 px-2">
+              <h3 class="text-xs font-black text-gray-900 leading-tight mb-1 line-clamp-1">${a.name}</h3>
+              <p class="text-[9px] font-bold text-gray-400 leading-none mb-1">${dayLabel}</p>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+        safeCreateIcons();
+      } catch (e) {
+        console.error("Render artists error:", e);
+      }
+    }
+
+    // ==================== [TIMETABLE COMPONENT CONTROLS] ====================
+    function setTimetableDate(day) {
+      try {
+        currentTimetableDay = day;
+        const b1 = document.getElementById('btn-tt-day1');
+        const b2 = document.getElementById('btn-tt-day2');
+        if (!b1 || !b2) return;
+        if (day === 1) {
+          b1.className = "px-3 py-1 rounded-md text-xs font-bold bg-white text-gray-900 shadow-sm";
+          b2.className = "px-3 py-1 rounded-md text-xs font-bold text-gray-600";
+        } else {
+          b2.className = "px-3 py-1 rounded-md text-xs font-bold bg-white text-gray-900 shadow-sm";
+          b1.className = "px-3 py-1 rounded-md text-xs font-bold text-gray-600";
+        }
+        renderTimetable();
+      } catch (e) {
+        console.error("Set timetable date error:", e);
+      }
+    }
+
+    function setTimetableMode(mode) {
+      try {
+        timetableMode = mode;
+        const bAll = document.getElementById('btn-tt-all');
+        const bMy = document.getElementById('btn-tt-my');
+        if (!bAll || !bMy) return;
+        if (mode === 'all') {
+          bAll.className = "flex-1 py-2 text-xs font-bold rounded-xl transition-all bg-gray-900 text-white";
+          bMy.className = "flex-1 py-2 text-xs font-bold rounded-xl transition-all bg-white border border-gray-200 text-gray-700 flex items-center justify-center gap-1.5";
+        } else {
+          bMy.className = "flex-1 py-2 text-xs font-bold rounded-xl transition-all bg-red-500 text-white flex items-center justify-center gap-1.5";
+          bAll.className = "flex-1 py-2 text-xs font-bold rounded-xl transition-all bg-white border border-gray-200 text-gray-700";
+        }
+        renderTimetable();
+      } catch (e) {
+        console.error("Set timetable mode error:", e);
+      }
+    }
+
+    // 単一会場(1カラム)仕様のタイムテーブルレンダラー
+    function renderTimetable() {
+      try {
+        const row = document.getElementById('timetable-stages-row');
+        if (!row) return;
+        row.innerHTML = '';
+
+        // 選択された出演日に該当するバンドを抽出
+        let stageArtists = allArtists.filter(a => a.day === currentTimetableDay);
+        
+        if (timetableMode === 'my') {
+          stageArtists = stageArtists.filter(a => favorites.includes(a.id));
+        }
+
+        const column = document.createElement('div');
+        column.className = "w-full space-y-3";
+        
+        let artistCardsHtml = '';
+        stageArtists.forEach(a => {
+          const isFav = favorites.includes(a.id);
+          const timeLabel = a.isFromFirestore ? "出演日: " + a.time : a.time;
+          artistCardsHtml += `
+            <div class="p-4 rounded-xl border ${isFav ? 'bg-red-50/50 border-red-100' : 'bg-gray-50 border-gray-100'} shadow-sm relative cursor-pointer hover:border-gray-300 transition-colors" onclick="showBandDetail('${a.id}')">
+              <div class="flex justify-between items-start mb-1.5">
+                <span class="text-[10px] font-bold text-gray-400">${timeLabel}</span>
+                <button onclick="event.stopPropagation(); toggleFavorite('${a.id}')" class="text-gray-400 hover:text-red-500 transition-colors">
+                  <i data-lucide="heart" class="w-4 h-4 ${isFav ? 'text-red-500 fill-current' : ''}"></i>
+                </button>
+              </div>
+              <p class="text-sm font-black text-gray-800 leading-tight pr-4">${a.name}</p>
+            </div>
+          `;
+        });
+
+        column.innerHTML = `
+          <div class="space-y-3">
+            ${artistCardsHtml || '<div class="text-xs text-gray-300 text-center py-12">演奏予定はありません</div>'}
+          </div>
+        `;
+        row.appendChild(column);
+        safeCreateIcons();
+      } catch (e) {
+        console.error("Render timetable error:", e);
+      }
+    }
+
+    // ==================== [RESERVATION SYSTEM (合わせ予約)] ====================
+    function setReservationDate(day) {
+      try {
+        reservationDate = day;
+        const b1 = document.getElementById('btn-res-day1');
+        const b2 = document.getElementById('btn-res-day2');
+        if (!b1 || !b2) return;
+        if (day === 1) {
+          b1.className = "px-2.5 py-1 rounded-md text-[10px] font-bold bg-white text-gray-900 shadow-sm";
+          b2.className = "px-2.5 py-1 rounded-md text-[10px] font-bold text-gray-600";
+        } else {
+          b2.className = "px-2.5 py-1 rounded-md text-[10px] font-bold bg-white text-gray-900 shadow-sm";
+          b1.className = "px-2.5 py-1 rounded-md text-[10px] font-bold text-gray-600";
+        }
+        renderReservationSlots();
+      } catch (e) {
+        console.error("Set reservation date error:", e);
+      }
+    }
+
+    function toggleUserSlotChoice(slotId) {
+      try {
+        userReservations[slotId] = !userReservations[slotId];
+        renderReservationSlots();
+      } catch (e) {
+        console.error("Toggle user slot choice error:", e);
+      }
+    }
+
+    function renderReservationSlots() {
+      try {
+        const container = document.getElementById('reservation-slots-container');
+        if (!container) return;
+        container.innerHTML = '';
+
+        const dayKey = (reservationDate === 1) ? 'day1' : 'day2';
+        
+        const matchedConfig = friendsReservations[dayKey] || { friendA: [false, false, false, false], friendB: [false, false, false, false] };
+        const friendA = matchedConfig.friendA;
+        const friendB = matchedConfig.friendB;
+
+        reservationSlotsConfig.forEach(slot => {
+          const myChoice = userReservations[slot.id] || false;
+          const choiceA = friendA[slot.id] || false;
+          const choiceB = friendB[slot.id] || false;
+
+          const isAllMatched = myChoice && choiceA && choiceB;
+
+          const slotCard = document.createElement('div');
+          slotCard.className = `p-3 rounded-xl border transition-all flex items-center justify-between ${
+            isAllMatched 
+              ? 'bg-emerald-50 border-emerald-200 shadow-inner' 
+              : myChoice 
+                ? 'bg-indigo-50/60 border-indigo-100' 
+                : 'bg-slate-50/50 border-slate-100 hover:bg-slate-100/30'
+          }`;
+
+          slotCard.innerHTML = `
+            <div class="flex-1 cursor-pointer select-none" onclick="toggleUserSlotChoice(${slot.id})">
+              <div class="text-[10px] font-bold text-gray-400 leading-none">${slot.label}</div>
+              <div class="text-xs font-black text-gray-800 mt-1">${slot.name}</div>
+              
+              <div class="flex gap-2 items-center mt-2 pt-1 border-t border-gray-100/30">
+                <span class="text-[8px] font-bold text-gray-400">希望状況:</span>
+                <span class="inline-flex items-center gap-1">
+                  <span class="w-2 h-2 rounded-full ${myChoice ? 'bg-indigo-500' : 'bg-gray-200'}"></span>
+                  <span class="text-[8px] font-semibold text-gray-500">自分</span>
+                </span>
+                <span class="inline-flex items-center gap-1">
+                  <span class="w-2 h-2 rounded-full ${choiceA ? 'bg-emerald-500' : 'bg-gray-200'}"></span>
+                  <span class="text-[8px] font-semibold text-gray-500">A</span>
+                </span>
+                <span class="inline-flex items-center gap-1">
+                  <span class="w-2 h-2 rounded-full ${choiceB ? 'bg-emerald-500' : 'bg-gray-200'}"></span>
+                  <span class="text-[8px] font-semibold text-gray-500">B</span>
+                </span>
+              </div>
+            </div>
+
+            <div class="flex flex-col items-end justify-center pl-3">
+              ${isAllMatched 
+                ? `<div class="bg-emerald-500 text-white font-black text-[8px] rounded px-1.5 py-0.5 animate-bounce uppercase tracking-wide">全員マッチ!</div>`
+                : myChoice 
+                  ? `<button onclick="toggleUserSlotChoice(${slot.id})" class="text-indigo-600 hover:text-indigo-800 text-[10px] font-black">選択中</button>`
+                  : `<button onclick="toggleUserSlotChoice(${slot.id})" class="text-slate-400 hover:text-slate-700 text-[10px] font-medium">希望する</button>`
+              }
+            </div>
+          `;
+          container.appendChild(slotCard);
+        });
+        safeCreateIcons();
+      } catch (e) {
+        console.error("Render reservation slots error:", e);
+      }
+    }
+
+    function copyGroupCode() {
+      try {
+        const code = document.getElementById('active-group-code').textContent;
+        const tempInput = document.createElement("input");
+        tempInput.value = code;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempInput);
+
+        showToast("グループコードをクリップボードにコピーしました！");
+      } catch (e) {
+        console.error("Clipboard copy error:", e);
+      }
+    }
+
+    function confirmReservation() {
+      try {
+        const dayKey = (reservationDate === 1) ? 'day1' : 'day2';
+        const matchedConfig = friendsReservations[dayKey] || { friendA: [false, false, false, false], friendB: [false, false, false, false] };
+        const friendA = matchedConfig.friendA;
+        const friendB = matchedConfig.friendB;
+
+        let dayLabel = `Day ${reservationDate}`;
+        if (eventDates[reservationDate - 1]) {
+          dayLabel = formatDateLabel(eventDates[reservationDate - 1], 'slash_week');
+        }
+
+        let matchCount = 0;
+        let reservationDetails = [];
+
+        reservationSlotsConfig.forEach(slot => {
+          if (userReservations[slot.id] && friendA[slot.id] && friendB[slot.id]) {
+            matchCount++;
+            reservationDetails.push(slot.name);
+          }
+        });
+
+        if (matchCount === 0) {
+          showToast("友達とマッチ(全員が◯を選択)している時間枠がありません。別の時間帯を希望してみてください！");
+          return;
+        }
+
+        const successTitle = "合わせ予約の確定完了";
+        const successMessage = `${dayLabel} ${reservationDetails.join('・')} にて同時予約が確定しました！`;
+
+        sendLocalNotification(successTitle, successMessage);
+        showToast("同時予約が正常に確定されました。同期システムに登録完了です。");
+      } catch (e) {
+        console.error("Reservation confirm error:", e);
+      }
+    }
+
+    // ==================== [BAND CREATOR Engine] ====================
+    function submitNewBand() {
+      try {
+        const nameInput = document.getElementById('new-band-name');
+        const daySelect = document.getElementById('new-band-day-select');
+        const iconInput = document.getElementById('new-band-icon');
+        const membersInput = document.getElementById('new-band-members');
+        const songInput = document.getElementById('new-band-song');
+
+        if (!nameInput || !daySelect) return;
+
+        const name = nameInput.value.trim();
+        if (!name) {
+          showToast("バンド名を入力してください。");
+          return;
+        }
+
+        const chosenDay = parseInt(daySelect.value, 10) || 1;
+
+        const defaultImages = [
+          "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&auto=format&fit=crop&q=80",
+          "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&auto=format&fit=crop&q=80",
+          "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&auto=format&fit=crop&q=80",
+          "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=400&auto=format&fit=crop&q=80"
+        ];
+        const randomIcon = defaultImages[Math.floor(Math.random() * defaultImages.length)];
+        const icon = iconInput.value.trim() || randomIcon;
+
+        const memberIds = membersInput.value.split(',')
+          .map(id => id.trim())
+          .filter(Boolean);
+
+        const songs = [];
+        const songTitle = songInput.value.trim();
+        if (songTitle) {
+          songs.push({
+            title: songTitle,
+            duration: "3:30",
+            eventId: latestEventId,
+            id: "song_" + Date.now()
+          });
+        }
+
+        const db = firebase.firestore();
+        showToast("Firestoreに保存中...");
+
+        db.collection("bands").add({
+          name: name,
+          icon: icon,
+          day: chosenDay,
+          stage: "イベント会場", // 会場は1つのため固定値として追加
+          events: [latestEventId],
+          isArchived: false,
+          memberIds: memberIds,
+          songs: songs,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        })
+        .then(() => {
+          showToast("新しいバンドをFirestoreに登録しました！");
+          nameInput.value = '';
+          iconInput.value = '';
+          membersInput.value = '';
+          songInput.value = '';
+          closeFullscreen();
+        })
+        .catch(err => {
+          console.error("Firestore submit error:", err);
+          showToast("保存に失敗しました。データベース権限を確認してください。");
+        });
+      } catch (err) {
+        console.error("Firebase runtime error:", err);
+        showToast("Firebase接続がオフラインです。");
+      }
+    }
+
+    // ==================== [FULLSCREEN PAGE NAVIGATION] ====================
+    function openFullscreen(key) {
+      try {
+        const overlay = document.getElementById('fullscreen-container-overlay');
+        const wrapper = document.getElementById('fullscreen-pages-wrapper');
+        const titleElement = document.getElementById('fullscreen-header-title');
+
+        if (!overlay || !wrapper) return;
+
+        document.querySelectorAll('.full-subcontent').forEach(el => el.classList.add('hidden'));
+
+        const contentId = `full-content-${key}`;
+        const targetContent = document.getElementById(contentId);
+        if (targetContent) {
+          targetContent.classList.remove('hidden');
+        }
+
+        titleElement.textContent = DISPLAY_NAMES[key] || "詳細情報";
+
+        if (key === 'create-band') {
+          const targetEventEl = document.getElementById('create-band-target-event');
+          if (targetEventEl) {
+            targetEventEl.textContent = `特定された最新イベント「${latestEventName || '最新イベント'}」へ自動追加されます。`;
+          }
+        }
+
+        overlay.classList.remove('hidden');
+        setTimeout(() => {
+          wrapper.classList.remove('translate-y-full');
+        }, 50);
+      } catch (e) {
+        console.error("Open fullscreen page error:", e);
+      }
+    }
+
+    function closeFullscreen() {
+      try {
+        const overlay = document.getElementById('fullscreen-container-overlay');
+        const wrapper = document.getElementById('fullscreen-pages-wrapper');
+
+        if (!overlay || !wrapper) return;
+
+        wrapper.classList.add('translate-y-full');
+        setTimeout(() => {
+          overlay.classList.add('hidden');
+        }, 300);
+      } catch (e) {
+        console.error("Close fullscreen page error:", e);
+      }
+    }
+
+    // ==========================================================================
+    // [PLATFORM EXTERNAL ACTIONS] 稼働状況に応じた外部・動的遷移処理
+    // ==========================================================================
+    function showPlatformDetail(platformName, statusKey) {
+      try {
+        if (statusKey === 'INSTAGRAM') {
+          showToast("Instagramを開きます...");
+          setTimeout(() => { window.open('https://www.instagram.com/c105_lmc/', '_blank'); }, 600);
+          return;
+        }
+        if (statusKey === 'TWITTER') {
+          showToast("X (Twitter) を開きます...");
+          setTimeout(() => { window.open('https://x.com/LMC_105', '_blank'); }, 600);
+          return;
+        }
+        if (statusKey === 'YOUTUBE') {
+          showToast("YouTubeを開きます...");
+          setTimeout(() => { window.open('https://www.youtube.com/@lmc1468', '_blank'); }, 600);
+          return;
+        }
+        if (statusKey === 'BACKSTAGE') {
+          showToast("裏方システムに接続中...");
+          setTimeout(() => { window.open('https://mypage.sorairosystem.com', '_blank'); }, 600);
+          return;
+        }
+
+        // 4/1年度自動判定付き年間予定表 PDFロード
+        if (statusKey === 'YEARLY') {
+          const currentDate = new Date();
+          const currentYear = currentDate.getFullYear();
+          const currentMonth = currentDate.getMonth() + 1;
+          const academicYear = (currentMonth >= 4) ? currentYear : (currentYear - 1);
+          
+          showToast("年間予定表を開きます...");
+          setTimeout(() => { 
+            window.open(`https://www.agu.ac.jp/pdf/graduate/graduate_class_schedule${academicYear}.pdf`, '_blank'); 
+          }, 600);
+          return;
+        }
+
+        openFullscreen('platform');
+        safeCreateIcons();
+      } catch (e) {
+        console.error("External navigation trigger error:", e);
+      }
+    }
+
+    // ==================== [NEWS & UTILITIES] ====================
+    function showNewsDetail(title, body) {
+      try {
+        DISPLAY_NAMES['news'] = title;
+        document.getElementById('news-date').textContent = "PUBLISHED: 2026.06.08";
+        document.getElementById('news-body').textContent = body;
+        openFullscreen('news');
+      } catch (e) {
+        console.error("Show news detail error:", e);
+      }
+    }
+
+    function showToast(message) {
+      try {
+        const toast = document.getElementById('toast-notification');
+        const msgSpan = document.getElementById('toast-message');
+        if (!toast || !msgSpan) return;
+        
+        msgSpan.textContent = message;
+        toast.className = "absolute top-12 left-4 right-4 bg-gray-900/95 backdrop-blur-md text-white px-4 py-3 rounded-xl shadow-xl z-[200] transform translate-y-0 opacity-100 transition-all duration-300 flex items-center gap-3";
+        
+        setTimeout(() => {
+          toast.className = "absolute top-12 left-4 right-4 bg-gray-900/95 backdrop-blur-md text-white px-4 py-3 rounded-xl shadow-xl z-[200] transform -translate-y-28 opacity-0 transition-all duration-300 flex items-center gap-3";
+        }, 3000);
+      } catch (e) {
+        console.error("Toast notification error:", e);
+      }
+    }
+
+    // ==================== [PLAYLIST MOCK GENERATOR] ====================
+    function generatePlaylistMock() {
+      try {
+        const resultDiv = document.getElementById('playlist-result');
+        if (!resultDiv) return;
+        resultDiv.innerHTML = '';
+        resultDiv.classList.remove('hidden');
+
+        const favArtists = allArtists.filter(a => favorites.includes(a.id));
+        if (favArtists.length === 0) {
+          resultDiv.innerHTML = `
+            <div class="p-4 bg-red-50 border border-red-100 rounded-xl text-center text-xs font-bold text-red-600 shadow-sm">
+              マイバンドに登録したアーティストがまだありません。アーティスト一覧画面から追加してお試しください。
+            </div>
+          `;
+          return;
+        }
+
+        resultDiv.innerHTML = `
+          <div class="flex items-center justify-center gap-2 py-8 text-xs font-bold text-gray-400">
+            <div class="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+            <span>あなただけのセットリストを構築中...</span>
+          </div>
+        `;
+
+        setTimeout(() => {
+          resultDiv.innerHTML = `
+            <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2.5">GENERATED SOUND TRACKS</div>
+            <div class="space-y-2 max-h-60 overflow-y-auto no-scrollbar">
+              ${favArtists.map(a => {
+                let songName = "LIVE TRACK";
+                if (a.isFromFirestore && a.songs && a.songs.length > 0) {
+                  const firstSong = a.songs[0];
+                  if (typeof firstSong === 'object' && firstSong.title) {
+                    songName = firstSong.title;
+                  } else if (typeof firstSong === 'string') {
+                    songName = firstSong;
+                  }
+                }
+
+                return `
+                  <div class="p-3 bg-white rounded-xl flex items-center justify-between border border-gray-100 shadow-sm">
+                    <div class="flex items-center gap-3">
+                      <div class="w-8 h-8 rounded-lg bg-gray-900 text-[10px] text-yellow-400 flex items-center justify-center font-black shadow-sm">SP</div>
+                      <div>
+                        <div class="text-xs font-black text-gray-800">${a.name} - ${songName}</div>
+                      </div>
+                    </div>
+                    <span class="text-[9px] text-gray-400 font-mono">03:45</span>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          `;
+          sendLocalNotification("プレイリスト作成完了", "マイバンド登録アーティストに基づくセットリストが構築されました。");
+        }, 1000);
+      } catch (e) {
+        console.error("Smart playlist engine error:", e);
+      }
+    }
+
+    // ==================== [INITIALIZATION] ====================
+    window.addEventListener('DOMContentLoaded', () => {
+      safeCreateIcons();
+      switchScreen('home');
+      initFirebaseAndLoadBands();
+    });
+  </script>
+</body>
+</html>
