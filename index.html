@@ -204,44 +204,23 @@
           <div class="bg-white rounded-xl p-4 border border-gray-100 shadow-sm mb-4">
             <h3 class="text-sm font-bold text-gray-800 mb-3 flex items-center gap-1.5">
               <span class="w-1.5 h-3 bg-indigo-500 rounded-full"></span>
-              公式アカウント ＆ 予定表
+              出演サークル公式Instagram
             </h3>
             <!-- 横スクロールコンテナ -->
             <div class="flex gap-2.5 overflow-x-auto dynamic-scroll-area pb-2" style="touch-action: pan-x;">
-              <!-- インスタ -->
-              <div onclick="showPlatformDetail('Instagram', 'INSTAGRAM')" class="flex flex-col items-center flex-shrink-0 w-20 cursor-pointer active:scale-95 transition-transform">
+              <!-- Light Purple -->
+              <div onclick="showPlatformDetail('Light Purple', 'INSTAGRAM_LP')" class="flex flex-col items-center flex-shrink-0 w-20 cursor-pointer active:scale-95 transition-transform">
                 <div class="w-11 h-11 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 text-white flex items-center justify-center border border-pink-100 mb-1.5 shadow-sm">
                   <i data-lucide="instagram" class="w-4.5 h-4.5"></i>
                 </div>
-                <span class="text-[10px] font-bold text-gray-700 text-center uppercase tracking-tight leading-tight">Instagram</span>
+                <span class="text-[10px] font-bold text-gray-700 text-center uppercase tracking-tight leading-tight">Light<br>Purple</span>
               </div>
-              <!-- Twitter / X -->
-              <div onclick="showPlatformDetail('Twitter', 'TWITTER')" class="flex flex-col items-center flex-shrink-0 w-20 cursor-pointer active:scale-95 transition-transform">
-                <div class="w-11 h-11 rounded-full bg-black text-white flex items-center justify-center border border-gray-800 mb-1.5 shadow-sm">
-                  <i data-lucide="twitter" class="w-4.5 h-4.5"></i>
+              <!-- Twinkle -->
+              <div onclick="showPlatformDetail('Twinkle', 'INSTAGRAM_TWINKLE')" class="flex flex-col items-center flex-shrink-0 w-20 cursor-pointer active:scale-95 transition-transform">
+                <div class="w-11 h-11 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 text-white flex items-center justify-center border border-pink-100 mb-1.5 shadow-sm">
+                  <i data-lucide="instagram" class="w-4.5 h-4.5"></i>
                 </div>
-                <span class="text-[10px] font-bold text-gray-700 text-center uppercase tracking-tight leading-tight">X</span>
-              </div>
-              <!-- Youtube -->
-              <div onclick="showPlatformDetail('Youtube', 'YOUTUBE')" class="flex flex-col items-center flex-shrink-0 w-20 cursor-pointer active:scale-95 transition-transform">
-                <div class="w-11 h-11 rounded-full bg-red-600 text-white flex items-center justify-center border border-red-500 mb-1.5 shadow-sm">
-                  <i data-lucide="youtube" class="w-4.5 h-4.5"></i>
-                </div>
-                <span class="text-[10px] font-bold text-gray-700 text-center uppercase tracking-tight leading-tight">YouTube</span>
-              </div>
-              <!-- 年間予定表 -->
-              <div onclick="showPlatformDetail('年間予定表', 'YEARLY')" class="flex flex-col items-center flex-shrink-0 w-20 cursor-pointer active:scale-95 transition-transform">
-                <div class="w-11 h-11 rounded-full bg-emerald-500 text-white flex items-center justify-center border border-emerald-400 mb-1.5 shadow-sm">
-                  <i data-lucide="calendar-days" class="w-4.5 h-4.5"></i>
-                </div>
-                <span class="text-[10px] font-bold text-gray-700 text-center uppercase tracking-tight leading-tight">予定表</span>
-              </div>
-              <!-- 裏方アプリ -->
-              <div onclick="showPlatformDetail('裏方アプリ', 'BACKSTAGE')" class="flex flex-col items-center flex-shrink-0 w-20 cursor-pointer active:scale-95 transition-transform">
-                <div class="w-11 h-11 rounded-full bg-slate-800 text-white flex items-center justify-center border border-slate-700 mb-1.5 shadow-sm">
-                  <i data-lucide="terminal" class="w-4.5 h-4.5"></i>
-                </div>
-                <span class="text-[10px] font-bold text-gray-700 text-center uppercase tracking-tight leading-tight">裏方</span>
+                <span class="text-[10px] font-bold text-gray-700 text-center uppercase tracking-tight leading-tight">Twinkle</span>
               </div>
             </div>
           </div>
@@ -1904,48 +1883,17 @@
     // ==========================================================================
     function showPlatformDetail(platformName, statusKey) {
       try {
-        if (statusKey === 'INSTAGRAM') {
-          showToast("Instagramを開きます...");
-          setTimeout(() => { window.open('https://www.instagram.com/c105_lmc/', '_blank'); }, 600);
+        if (statusKey === 'INSTAGRAM_LP') {
+          showToast("Light PurpleのInstagramを開きます...");
+          setTimeout(() => { window.open('https://www.instagram.com/c102_lightpurple/', '_blank'); }, 600);
           return;
         }
-        if (statusKey === 'TWITTER') {
-          showToast("X (Twitter) を開きます...");
-          setTimeout(() => { window.open('https://x.com/LMC_105', '_blank'); }, 600);
+        if (statusKey === 'INSTAGRAM_TWINKLE') {
+          showToast("TwinkleのInstagramを開きます...");
+          setTimeout(() => { window.open('https://www.instagram.com/twinkle_agu/', '_blank'); }, 600);
           return;
         }
-        if (statusKey === 'YOUTUBE') {
-          showToast("YouTubeを開きます...");
-          setTimeout(() => { window.open('https://www.youtube.com/@lmc1468', '_blank'); }, 600);
-          return;
-        }
-        if (statusKey === 'BACKSTAGE') {
-          showToast("裏方システムに接続中...");
-          setTimeout(() => { window.open('https://mypage.sorairosystem.com', '_blank'); }, 600);
-          return;
-        }
-
-        // 4/1年度自動判定付き年間予定表 PDFロード
-        if (statusKey === 'YEARLY') {
-          const currentDate = new Date();
-          const currentYear = currentDate.getFullYear();
-          const currentMonth = currentDate.getMonth() + 1;
-          const academicYear = (currentMonth >= 4) ? currentYear : (currentYear - 1);
-          
-          showToast("年間予定表を開きます...");
-          setTimeout(() => { 
-            window.open(`https://www.agu.ac.jp/pdf/graduate/graduate_class_schedule${academicYear}.pdf`, '_blank'); 
-          }, 600);
-          return;
-        }
-
-        openFullscreen('platform');
-        safeCreateIcons();
-      } catch (e) {
-        console.error("External navigation trigger error:", e);
-      }
-    }
-
+        
     // ==================== [NEWS & UTILITIES] ====================
     function showNewsDetail(title, body) {
       try {
