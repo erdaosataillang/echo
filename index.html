@@ -159,13 +159,11 @@
             <div class="grid-menu-icon"><i data-lucide="coffee" class="w-5 h-5"></i></div>
             <span class="text-[10px] font-bold text-gray-700 mt-2 text-center leading-tight">ドリンク<br>メニュー</span>
           </button>
-          <!-- 空白プレースホルダー (レイアウト維持のため) -->
-          <div class="flex flex-col items-center opacity-25">
-            <div class="w-12 h-12 rounded-full border border-dashed border-gray-300 flex items-center justify-center text-gray-300">
-              <i data-lucide="minus" class="w-4 h-4"></i>
-            </div>
-            <span class="text-[10px] font-bold text-gray-300 mt-2 text-center leading-tight">-</span>
-          </div>
+          <!-- チェックイン -->
+          <button onclick="executeCheckIn()" class="grid-menu-item">
+            <div class="grid-menu-icon"><i data-lucide="map-pin" class="w-5 h-5"></i></div>
+            <span class="text-[10px] font-bold text-gray-700 mt-2 text-center leading-tight">チェック<br>イン</span>
+          </button>
           <!-- プレイリスト -->
           <button onclick="openFullscreen('playlist')" class="grid-menu-item">
             <div class="grid-menu-icon"><i data-lucide="music" class="w-5 h-5"></i></div>
