@@ -380,52 +380,56 @@
             </div>
           </div>
 
-          <!-- [SCHEDULE] - Firestoreのイベント情報からリアルタイムに構築される動的コンテンツ -->
-          <div id="full-content-schedule" class="full-subcontent hidden">
+          <!-- [DRINK MENU] -->
+          <div id="full-content-drink" class="full-subcontent hidden">
             <div class="space-y-4 max-w-sm mx-auto">
-              <p class="text-xs text-gray-500 mb-2">Firestore（events コレクション）から自動取得された最新のイベント予定一覧です。</p>
-              
-              <!-- イベント表示用コンテナ -->
-              <div id="dynamic-events-list-container" class="space-y-3.5">
-                <div class="text-center py-12 text-gray-400 text-xs">
-                  <div class="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                  予定情報を同期中...
+              <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                <h3 class="text-sm font-black text-gray-800 border-b border-gray-100 pb-2 mb-3 flex items-center gap-2">
+                  <i data-lucide="beer" class="w-4 h-4 text-amber-500"></i>
+                  アルコール
+                </h3>
+                <div class="space-y-2">
+                  <div class="flex justify-between items-center text-xs font-bold text-gray-700">
+                    <span>ビール (生)</span>
+                    <span>¥600</span>
+                  </div>
+                  <div class="flex justify-between items-center text-xs font-bold text-gray-700">
+                    <span>ハイボール</span>
+                    <span>¥500</span>
+                  </div>
+                  <div class="flex justify-between items-center text-xs font-bold text-gray-700">
+                    <span>レモンサワー</span>
+                    <span>¥500</span>
+                  </div>
+                  <div class="flex justify-between items-center text-xs font-bold text-gray-700">
+                    <span>カシスオレンジ</span>
+                    <span>¥500</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
 
-          <!-- [RANK] -->
-          <div id="full-content-rank" class="full-subcontent hidden">
-            <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-lg text-center max-w-sm mx-auto">
-              <div class="w-16 h-16 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-600 mx-auto mb-3 border border-yellow-200 shadow-inner">
-                <i data-lucide="crown" class="w-8 h-8"></i>
-              </div>
-              <div class="text-[10px] font-black text-yellow-600 tracking-widest uppercase mb-1">CURRENT RANK</div>
-              <div class="text-lg font-black text-gray-900 mb-2">プラチナ・コアメンバー</div>
-              <p class="text-[10px] text-gray-400 font-bold mb-6">現在のファンランク：Lv.24</p>
-              <div class="space-y-1.5 text-left mb-6">
-                <div class="flex justify-between text-[10px] font-black text-gray-400 uppercase">
-                  <span>NEXT LEVEL (Lv.25)</span>
-                  <span>75%</span>
-                </div>
-                <div class="w-full h-3 bg-gray-100 rounded-full overflow-hidden border border-gray-200/50 shadow-inner">
-                  <div class="h-full bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-full" style="width: 75%;"></div>
-                </div>
-                <p class="text-[9px] text-gray-400 text-right font-medium">次のレベルまで残り 2,500 pts</p>
-              </div>
-              <div class="text-left bg-gray-50 border border-gray-100 p-4 rounded-xl space-y-2">
-                <h4 class="text-xs font-black text-gray-700 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                  <i data-lucide="gift" class="w-4 h-4 text-gray-500"></i>
-                  到達済みアンロック特典
-                </h4>
-                <div class="flex items-center gap-2 text-xs font-bold text-gray-600">
-                  <i data-lucide="check-circle-2" class="w-4 h-4 text-green-500"></i>
-                  <span>限定ディスコードチャンネル参加権</span>
-                </div>
-                <div class="flex items-center gap-2 text-xs font-bold text-gray-600">
-                  <i data-lucide="check-circle-2" class="w-4 h-4 text-green-500"></i>
-                  <span>バースデー個別ビデオメッセージ</span>
+              <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                <h3 class="text-sm font-black text-gray-800 border-b border-gray-100 pb-2 mb-3 flex items-center gap-2">
+                  <i data-lucide="cup-soda" class="w-4 h-4 text-blue-500"></i>
+                  ソフトドリンク
+                </h3>
+                <div class="space-y-2">
+                  <div class="flex justify-between items-center text-xs font-bold text-gray-700">
+                    <span>コーラ</span>
+                    <span>¥300</span>
+                  </div>
+                  <div class="flex justify-between items-center text-xs font-bold text-gray-700">
+                    <span>ジンジャーエール</span>
+                    <span>¥300</span>
+                  </div>
+                  <div class="flex justify-between items-center text-xs font-bold text-gray-700">
+                    <span>オレンジジュース</span>
+                    <span>¥300</span>
+                  </div>
+                  <div class="flex justify-between items-center text-xs font-bold text-gray-700">
+                    <span>ウーロン茶</span>
+                    <span>¥300</span>
+                  </div>
                 </div>
               </div>
             </div>
