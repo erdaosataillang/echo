@@ -154,16 +154,18 @@
             <div class="grid-menu-icon"><i data-lucide="info" class="w-5 h-5"></i></div>
             <span class="text-[10px] font-bold text-gray-700 mt-2 text-center leading-tight">インフォ</span>
           </button>
-          <!-- 今後の予定 -->
-          <button onclick="openFullscreen('schedule')" class="grid-menu-item">
-            <div class="grid-menu-icon"><i data-lucide="calendar" class="w-5 h-5"></i></div>
-            <span class="text-[10px] font-bold text-gray-700 mt-2 text-center leading-tight">今後の予定</span>
+          <!-- ドリンクメニュー -->
+          <button onclick="openFullscreen('drink')" class="grid-menu-item">
+            <div class="grid-menu-icon"><i data-lucide="coffee" class="w-5 h-5"></i></div>
+            <span class="text-[10px] font-bold text-gray-700 mt-2 text-center leading-tight">ドリンク<br>メニュー</span>
           </button>
-          <!-- ランク -->
-          <button onclick="openFullscreen('rank')" class="grid-menu-item">
-            <div class="grid-menu-icon"><i data-lucide="trending-up" class="w-5 h-5"></i></div>
-            <span class="text-[10px] font-bold text-gray-700 mt-2 text-center leading-tight">ランク</span>
-          </button>
+          <!-- 空白プレースホルダー (レイアウト維持のため) -->
+          <div class="flex flex-col items-center opacity-25">
+            <div class="w-12 h-12 rounded-full border border-dashed border-gray-300 flex items-center justify-center text-gray-300">
+              <i data-lucide="minus" class="w-4 h-4"></i>
+            </div>
+            <span class="text-[10px] font-bold text-gray-300 mt-2 text-center leading-tight">-</span>
+          </div>
           <!-- プレイリスト -->
           <button onclick="openFullscreen('playlist')" class="grid-menu-item">
             <div class="grid-menu-icon"><i data-lucide="music" class="w-5 h-5"></i></div>
