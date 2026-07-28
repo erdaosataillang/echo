@@ -565,14 +565,32 @@
                 </div>
               </div>
               
-              <button onclick="showToast('アカウント設定機能は現在準備中です。')" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-xl text-xs mt-6 active:scale-95 transition-all shadow-md">
-                プロフィールの編集
-              </button>
+              <div class="grid grid-cols-2 gap-3 mt-6">
+                <button onclick="showToast('機能準備中です')" class="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-black rounded-xl text-xs active:scale-95 transition-all">
+                  編集
+                </button>
+                <button onclick="openFullscreen('performer-info')" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-xl text-xs active:scale-95 transition-all shadow-md">
+                  出演者の方へ
+                </button>
+              </div>
             </div>
           </div>
 
           <!-- [SETTINGS] -->
           <div id="full-content-settings" class="full-subcontent hidden">
+
+            <!-- [PERFORMER INFO] -->
+          <div id="full-content-performer-info" class="full-subcontent hidden">
+            <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm space-y-4">
+              <h3 class="text-sm font-black text-gray-800">出演者の皆様へ</h3>
+              <p class="text-xs text-gray-600 leading-relaxed">
+                本イベントへのご出演ありがとうございます。当日のタイムテーブルや機材搬入、リハーサルに関する最新情報は、このアプリおよび各大学サークルの責任者を通じて共有されます。
+              </p>
+              <div class="bg-amber-50 border border-amber-100 p-4 rounded-xl text-[10px] text-amber-800 font-bold">
+                注意事項：機材トラブルや急な予定変更があった場合は、速やかに「裏方部」スタッフまでご報告をお願いいたします。
+              </div>
+            </div>
+          </div>
             
             <!-- ローカルプッシュ通知制御デモ -->
             <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
@@ -760,7 +778,8 @@
       "account": "アカウント情報",
       "news": "ニュース詳細",
       "create-band": "新規バンド登録",
-      "band-detail": "バンド詳細情報"
+      "band-detail": "バンド詳細情報",
+      "performer-info": "出演者の方へ"
     };
 
     // ==========================================================================
