@@ -137,11 +137,14 @@
       <!-- ヘッダーイメージ & アクションボタン -->
         <div class="relative w-full aspect-[16/10] bg-black flex-shrink-0">
           <img src="https://ul.h3z.jp/WrfGDLFP.png" alt="HEADER VISUAL" class="w-full h-full object-cover">
-          <div class="absolute top-4 right-4 z-10">
+          <div class="absolute top-4 left-4 right-4 flex justify-between items-center z-10">
+            <button onclick="showToast('現在、お知らせはありません')" class="btn-icon-round" aria-label="お知らせ">
+              <i data-lucide="bell" class="w-5 h-5"></i>
+            </button>
             <button onclick="openFullscreen('settings')" class="btn-icon-round" aria-label="設定">
               <i data-lucide="settings" class="w-5 h-5"></i>
             </button>
-        </div>
+          </div>
         </div>
 
         <!-- メイングリッドメニュー -->
@@ -387,7 +390,7 @@
                   ドリンクチケット (入場時)
                 </div>
                 <p class="text-xl font-black text-indigo-800">¥300</p>
-                <p class="text-[10px] text-indigo-600 mt-1 font-bold">※お好きなドリンク2杯と交換できます</p>
+                <p class="text-[10px] text-indigo-600 mt-1 font-bold">※お好きなドリンク1杯と交換できます</p>
               </div>
 
               <!-- メニュー一覧 -->
