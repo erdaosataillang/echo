@@ -3,453 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>イベントドリンクレジ - 操作画面</title>
+    <title>レジ操作画面</title>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: sans-serif;
-            user-select: none;
-        }
-
-        body {
-            background-color: #f0f2f5;
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        .main-pane {
-            flex: 2;
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
-            gap: 20px;
-            height: 100%;
-        }
-
-        .side-pane {
-            flex: 1;
-            background-color: #ffffff;
-            border-left: 2px solid #e0e0e0;
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
-            box-shadow: -4px 0 10px rgba(0,0,0,0.05);
-            height: 100%;
-        }
-
-        .payment-selector {
-            display: flex;
-            gap: 15px;
-        }
-
-        .pay-btn {
-            flex: 1;
-            padding: 15px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            border: 2px solid #ccc;
-            border-radius: 10px;
-            background-color: #fff;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .pay-btn.active {
-            background-color: #007bff;
-            color: #fff;
-            border-color: #0056b3;
-            box-shadow: 0 4px 10px rgba(0,123,255,0.3);
-        }
-
-        .product-grid {
-            flex: 1;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(3, 1fr);
-            gap: 15px;
-        }
-
-        .product-btn {
-            background-color: #fff;
-            border: 2px solid #ddd;
-            border-radius: 12px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-            transition: transform 0.1s, background-color 0.2s;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-
-        .product-btn:active {
-            transform: scale(0.97);
-            background-color: #f8f9fa;
-        }
-
-        .product-name {
-            font-size: 1.3rem;
-            font-weight: bold;
-            color: #333;
-        }
-
-        .product-price {
-            font-size: 1.1rem;
-            color: #666;
-            background-color: #f1f3f5;
-            padding: 4px 12px;
-            border-radius: 20px;
-        }
-
-        .cart-title {
-            font-size: 1.2rem;
-            font-weight: bold;
-            margin-bottom: 10px;
-            color: #333;
-            border-bottom: 2px solid #f1f3f5;
-            padding-bottom: 8px;
-        }
-
-        .cart-items {
-            flex: 1;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-bottom: 15px;
-        }
-
-        .cart-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: #f8f9fa;
-            padding: 10px 15px;
-            border-radius: 8px;
-            font-size: 1.1rem;
-        }
-
-        .cart-item-controls {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .qty-btn {
-            width: 30px;
-            height: 30px;
-            font-size: 1rem;
-            font-weight: bold;
-            border: 1px solid #ccc;
-            background-color: #fff;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        .qty-btn:active {
-            background-color: #e2e6ea;
-        }
-
-        .checkout-section {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            border-top: 2px solid #f1f3f5;
-            padding-top: 15px;
-        }
-
-        .total-display {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 1.4rem;
-            font-weight: bold;
-            color: #333;
-        }
-
-        .total-amount {
-            color: #d9534f;
-            font-size: 1.8rem;
-        }
-
-        .action-buttons {
-            display: oflex;
-            display: flex;
-            gap: 10px;
-        }
-
-        .btn-reset {
-            flex: 1;
-            padding: 15px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            background-color: #6c757d;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-
-        .btn-checkout {
-            flex: 2;
-            padding: 15px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            background-color: #28a745;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            box-shadow: 0 4px 10px rgba(40,167,69,0.3);
-        }
-
-        .btn-checkout:active, .btn-reset:active {
-            opacity: 0.9;
-            transform: scale(0.98);
-        }
-
-        .empty-cart {
-            text-align: center;
-            color: #aaa;
-            margin-top: 40px;
-            font-size: 1.1rem;
-        }
+        body { font-family: sans-serif; display: flex; height: 100vh; background: #f0f2f5; margin: 0; }
+        .main-pane { flex: 2; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+        .side-pane { flex: 1; background: #fff; border-left: 2px solid #ddd; padding: 20px; display: flex; flex-direction: column; }
+        .product-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        button { padding: 20px; font-size: 1.2rem; cursor: pointer; border-radius: 8px; border: 1px solid #ccc; background: #fff; }
+        button:active { background: #e0e0e0; }
+        .active { background: #007bff !important; color: white; }
+        #total-display { font-size: 2rem; font-weight: bold; margin: 20px 0; }
     </style>
 </head>
 <body>
-
     <div class="main-pane">
-        <div class="payment-selector">
-            <button class="pay-btn active" id="btn-cash" onclick="setPaymentMode('cash')">現金</button>
-            <button class="pay-btn" id="btn-ticket" onclick="setPaymentMode('ticket')">ドリンクチケット</button>
-        </div>
-
-        <div class="product-grid" id="product-grid"></div>
+        <div><button id="btn-cash" class="active" onclick="setMode('cash')">現金</button> <button id="btn-ticket" onclick="setMode('ticket')">チケット</button></div>
+        <div class="product-grid" id="grid"></div>
     </div>
-
     <div class="side-pane">
-        <div class="cart-title">注文内容</div>
-        <div class="cart-items" id="cart-items">
-            <div class="empty-cart">商品が選択されていません</div>
-        </div>
-
-        <div class="checkout-section">
-            <div class="total-display">
-                <span>合計</span>
-                <span class="total-amount" id="total-display">0円</span>
-            </div>
-            <div class="action-buttons">
-                <button class="btn-reset" onclick="resetCart()">リセット</button>
-                <button class="btn-checkout" onclick="checkout()">会計を確定する</button>
-            </div>
-        </div>
+        <h2>注文内容</h2>
+        <div id="cart" style="flex:1"></div>
+        <div id="total-display">0円</div>
+        <button onclick="checkout()" style="background:#28a745; color:white;">会計を確定する</button>
     </div>
 
-    <!-- Firebase SDK (Modular CDN版) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // Firebase設定
-        const firebaseConfig = {
-            apiKey: "AIzaSyA6Toofq1A0qDUgJFimU6C0aZuz-L1RuN8",
-            authDomain: "echo-4bc7e.firebaseapp.com",
-            projectId: "echo-4bc7e",
-            storageBucket: "echo-4bc7e.firebasestorage.app",
-            messagingSenderId: "206573954980",
-            appId: "1:206573954980:web:f9d5ab978e12bd83664331",
-            measurementId: "G-7MLE8EGBM7"
-        };
+        const firebaseConfig = { /* ここに設定を貼り付けてください */ };
+        const db = getFirestore(initializeApp(firebaseConfig));
 
-        // 初期化
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        // 商品マスター定義
+        let mode = 'cash', cart = {};
         const products = [
-            { id: 'water', name: 'お水', cashPrice: 200 },
-            { id: 'tea', name: 'お茶', cashPrice: 200 },
-            { id: 'calpis', name: 'カルピス', cashPrice: 200 },
-            { id: 'calpis_soda', name: 'カルピスソーダ', cashPrice: 200 },
-            { id: 'orange', name: 'オレンジジュース', cashPrice: 200 },
-            { id: 'cola', name: 'コーラ', cashPrice: 200 },
-            { id: 'redbull', name: 'レッドブル', cashPrice: 300 },
-            { id: 'redbull_purple', name: 'レッドブルパープル', cashPrice: 300 }
+            {id:'water', name:'お水', p:200}, {id:'tea', name:'お茶', p:200}, {id:'calpis', name:'カルピス', p:200},
+            {id:'calpis_soda', name:'カルピスソーダ', p:200}, {id:'orange', name:'オレンジ', p:200}, {id:'cola', name:'コーラ', p:200},
+            {id:'redbull', name:'レッドブル', p:300}, {id:'redbull_p', name:'RBパープル', p:300}
         ];
 
-        let currentPaymentMode = 'cash';
-        let cart = {};
-
-        window.setPaymentMode = function(mode) {
-            currentPaymentMode = mode;
-            document.getElementById('btn-cash').classList.toggle('active', mode === 'cash');
-            document.getElementById('btn-ticket').classList.toggle('active', mode === 'ticket');
-            renderProducts();
-            updateCartDisplay();
+        window.setMode = (m) => { mode = m; document.getElementById('btn-cash').classList.toggle('active', m==='cash'); document.getElementById('btn-ticket').classList.toggle('active', m==='ticket'); render(); };
+        const render = () => {
+            document.getElementById('grid').innerHTML = products.map(p => `<button onclick="add('${p.id}')">${p.name}<br>${mode==='cash'?p.p+'円':'1枚'}</button>`).join('');
         };
-
-        function renderProducts() {
-            const grid = document.getElementById('product-grid');
-            grid.innerHTML = '';
-
-            products.forEach(product => {
-                const btn = document.createElement('button');
-                btn.className = 'product-btn';
-                btn.onclick = () => addToCart(product.id);
-
-                let priceText = currentPaymentMode === 'cash' ? `${product.cashPrice}円` : 'チケット 1枚';
-
-                btn.innerHTML = `
-                    <span class="product-name">${product.name}</span>
-                    <span class="product-price">${priceText}</span>
-                `;
-                grid.appendChild(btn);
-            });
-        }
-
-        function addToCart(productId) {
-            if (!cart[productId]) {
-                cart[productId] = 0;
-            }
-            cart[productId]++;
-            updateCartDisplay();
-        }
-
-        window.changeQuantity = function(productId, delta) {
-            if (cart[productId] + delta > 0) {
-                cart[productId] += delta;
-            } else {
-                delete cart[productId];
-            }
-            updateCartDisplay();
+        window.add = (id) => { cart[id] = (cart[id] || 0) + 1; update(); };
+        const update = () => {
+            document.getElementById('cart').innerHTML = Object.entries(cart).map(([id, q]) => `<div>${products.find(p=>p.id===id).name} × ${q}</div>`).join('');
+            const total = Object.entries(cart).reduce((s, [id, q]) => s + (mode==='cash' ? products.find(p=>p.id===id).p * q : 0), 0);
+            document.getElementById('total-display').innerText = mode==='cash' ? total+'円' : Object.values(cart).reduce((a,b)=>a+b,0)+'枚';
         };
-
-        function syncToCustomer(status = 'active', lastTotalText = '') {
-            const state = {
-                mode: currentPaymentMode,
-                cart: cart,
-                status: status,
-                lastTotalText: lastTotalText
-            };
-            localStorage.setItem('pos_cart_state', JSON.stringify(state));
-        }
-
-        function updateCartDisplay() {
-            const container = document.getElementById('cart-items');
-            container.innerHTML = '';
-
-            const productKeys = Object.keys(cart);
-
-            if (productKeys.length === 0) {
-                container.innerHTML = '<div class="empty-cart">商品が選択されていません</div>';
-                document.getElementById('total-display').innerText = currentPaymentMode === 'cash' ? '0円' : '0枚';
-                syncToCustomer('active');
-                return;
-            }
-
-            let totalSum = 0;
-            let totalCount = 0;
-
-            productKeys.forEach(productId => {
-                const product = products.find(p => p.id === productId);
-                const count = cart[productId];
-                totalCount += count;
-
-                let itemPrice = currentPaymentMode === 'cash' ? product.cashPrice * count : count;
-                if (currentPaymentMode === 'cash') {
-                    totalSum += itemPrice;
-                }
-
-                const itemDiv = document.createElement('div');
-                itemDiv.className = 'cart-item';
-                itemDiv.innerHTML = `
-                    <span>${product.name} × ${count}</span>
-                    <div class="cart-item-controls">
-                        <span>${currentPaymentMode === 'cash' ? itemPrice + '円' : count + '枚'}</span>
-                        <button class="qty-btn" onclick="changeQuantity('${productId}', -1)">-</button>
-                        <button class="qty-btn" onclick="changeQuantity('${productId}', 1)">+</button>
-                    </div>
-                `;
-                container.appendChild(itemDiv);
-            });
-
-            let totalText = '';
-            if (currentPaymentMode === 'cash') {
-                totalText = `${totalSum}円`;
-            } else {
-                totalText = `${totalCount}枚`;
-            }
-
-            document.getElementById('total-display').innerText = totalText;
-            syncToCustomer('active');
-        }
-
-        window.resetCart = function() {
-            cart = {};
-            updateCartDisplay();
+        window.checkout = async () => {
+            const docRef = await addDoc(collection(db, "sales"), { cart, mode, total: document.getElementById('total-display').innerText, createdAt: serverTimestamp() });
+            await setDoc(doc(db, "state", "current_session"), { cart, mode, status: 'completed' });
+            alert('会計ID: ' + docRef.id); cart = {}; update();
         };
-
-        // 会計確定時にFirestoreへデータを保存
-        window.checkout = async function() {
-            if (Object.keys(cart).length === 0) {
-                alert('商品が選択されていません。');
-                return;
-            }
-            
-            const modeText = currentPaymentMode === 'cash' ? '現金' : 'ドリンクチケット';
-            const totalText = document.getElementById('total-display').innerText;
-            
-            if (confirm(`【${modeText}会計】\n合計: ${totalText}\n会計を確定してよろしいですか？`)) {
-                try {
-                    // 売上データの構築
-                    let totalSum = 0;
-                    let totalCount = 0;
-                    const itemsDetail = {};
-
-                    for (const [productId, count] of Object.entries(cart)) {
-                        const product = products.find(p => p.id === productId);
-                        itemsDetail[productId] = {
-                            name: product.name,
-                            quantity: count,
-                            subtotal: currentPaymentMode === 'cash' ? product.cashPrice * count : count
-                        };
-                        totalCount += count;
-                        if (currentPaymentMode === 'cash') {
-                            totalSum += product.cashPrice * count;
-                        }
-                    }
-
-                    const salesData = {
-                        paymentMode: currentPaymentMode, // 'cash' or 'ticket'
-                        items: itemsDetail,
-                        totalAmount: currentPaymentMode === 'cash' ? totalSum : 0,
-                        totalTickets: currentPaymentMode === 'ticket' ? totalCount : 0,
-                        totalItemCount: totalCount,
-                        createdAt: serverTimestamp() // サーバーのタイムスタンプ
-                    };
-
-                    // Firestoreの "sales" コレクションに追加
-                    await addDoc(collection(db, "sales"), salesData);
-
-                    // サブモニター側に完了画面を表示
-                    syncToCustomer('completed', totalText);
-                    alert('会計が完了し、データを保存しました！');
-                    resetCart();
-
-                } catch (e) {
-                    console.error("Firebase保存エラー: ", e);
-                    alert('データの保存に失敗しました。ネットワークを確認してください。');
-                }
-            }
-        };
-
-        // 初期描画
-        renderProducts();
-        syncToCustomer();
+        render();
     </script>
 </body>
 </html>
