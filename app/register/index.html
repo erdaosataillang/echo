@@ -5,52 +5,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>イベントドリンクレジ - 操作＆管理画面</title>
     <style>
+        /* CSSは前回から変更なしのため、長さを抑えるため省略せず記載します */
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; user-select: none; }
         body { background-color: #f0f2f5; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        
-        /* ヘッダー・タブ */
         .header { background: #333; color: white; display: flex; padding: 10px 20px; gap: 20px; align-items: center; }
         .tab-btn { background: none; border: none; color: #aaa; font-size: 1.2rem; cursor: pointer; padding: 10px; }
         .tab-btn.active { color: white; font-weight: bold; border-bottom: 2px solid white; }
-        
-        /* コンテンツ */
         .content-area { flex: 1; display: none; height: 100%; }
         .content-area.active { display: flex; }
-
-        /* レジ画面 */
         .main-pane { flex: 2; display: flex; flex-direction: column; padding: 20px; gap: 20px; overflow-y: auto; }
         .side-pane { flex: 1; background-color: #ffffff; border-left: 2px solid #e0e0e0; display: flex; flex-direction: column; padding: 20px; box-shadow: -4px 0 10px rgba(0,0,0,0.05); }
-        
         .payment-selector { display: flex; gap: 15px; }
         .pay-btn { flex: 1; padding: 15px; font-size: 1.2rem; font-weight: bold; border: 2px solid #ccc; border-radius: 10px; background-color: #fff; cursor: pointer; transition: all 0.2s; }
         .pay-btn.active { background-color: #007bff; color: #fff; border-color: #0056b3; }
-        
         .product-grid { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
         .product-btn { background-color: #fff; border: 2px solid #ddd; border-radius: 12px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 8px; cursor: pointer; padding: 20px 0; }
         .product-btn:active { transform: scale(0.97); background-color: #f8f9fa; }
         .product-name { font-size: 1.3rem; font-weight: bold; color: #333; }
         .product-price { font-size: 1.1rem; color: #666; background-color: #f1f3f5; padding: 4px 12px; border-radius: 20px; }
-        
         .cart-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 10px; border-bottom: 2px solid #f1f3f5; padding-bottom: 8px; }
         .cart-items { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
         .cart-item { display: flex; justify-content: space-between; align-items: center; background-color: #f8f9fa; padding: 10px 15px; border-radius: 8px; font-size: 1.1rem; }
         .qty-btn { width: 35px; height: 35px; font-size: 1.2rem; font-weight: bold; border: 1px solid #ccc; background-color: #fff; border-radius: 5px; cursor: pointer; margin-left: 10px; }
-        
         .checkout-section { display: flex; flex-direction: column; gap: 12px; border-top: 2px solid #f1f3f5; padding-top: 15px; }
         .total-display { display: flex; justify-content: space-between; align-items: center; font-size: 1.4rem; font-weight: bold; }
         .total-amount { color: #d9534f; font-size: 1.8rem; }
         .action-buttons { display: flex; gap: 10px; }
         .btn-reset { flex: 1; padding: 15px; font-size: 1.1rem; font-weight: bold; background-color: #6c757d; color: white; border: none; border-radius: 8px; cursor: pointer; }
         .btn-checkout { flex: 2; padding: 15px; font-size: 1.2rem; font-weight: bold; background-color: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer; }
-
-        /* 管理画面 */
         .admin-pane { width: 100%; padding: 20px; overflow-y: auto; background: #fff; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background-color: #f4f4f4; }
         .btn-delete { background-color: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; }
-
-        /* --- モーダル (アラート置換用) --- */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 2000; }
         .modal-box { background: #fff; padding: 30px; border-radius: 15px; min-width: 450px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
         .modal-title { font-size: 1.6rem; font-weight: bold; margin-bottom: 20px; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 10px; }
@@ -60,8 +47,6 @@
         .btn-cancel { background: #6c757d; color: white; }
         .btn-ok { background: #007bff; color: white; }
         .btn-ok:disabled { background: #ccc; cursor: not-allowed; }
-
-        /* テンキー（レジ用） */
         .calc-row { display: flex; justify-content: space-between; font-size: 1.5rem; margin: 10px 0; }
         .calc-val { font-weight: bold; }
         .change-val { color: #d9534f; }
@@ -74,13 +59,11 @@
 </head>
 <body>
 
-    <!-- ヘッダー -->
     <div class="header">
         <button class="tab-btn active" onclick="switchTab('pos')">レジ操作</button>
         <button class="tab-btn" onclick="switchTab('admin')">決済履歴・管理</button>
     </div>
 
-    <!-- レジ画面 -->
     <div id="tab-pos" class="content-area active">
         <div class="main-pane">
             <div class="payment-selector">
@@ -102,7 +85,6 @@
         </div>
     </div>
 
-    <!-- 管理画面 -->
     <div id="tab-admin" class="content-area">
         <div class="admin-pane">
             <h2>決済履歴</h2>
@@ -113,7 +95,6 @@
         </div>
     </div>
 
-    <!-- 汎用・レジ用モーダル -->
     <div class="modal-overlay" id="modal">
         <div class="modal-box">
             <div class="modal-title" id="modal-title">確認</div>
@@ -124,7 +105,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, doc, setDoc, deleteDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyA6Toofq1A0qDUgJFimU6C0aZuz-L1RuN8",
@@ -138,7 +119,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // UI制御
         window.switchTab = function(tab) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.content-area').forEach(c => c.classList.remove('active'));
@@ -155,6 +135,7 @@
 
         let currentPaymentMode = 'ticket';
         let cart = {};
+        let currentPaymentId = null; // ★事前発行する決済ID
 
         window.setPaymentMode = function(mode) {
             currentPaymentMode = mode;
@@ -175,9 +156,19 @@
             });
         }
 
-        window.addToCart = function(productId) { cart[productId] = (cart[productId] || 0) + 1; updateCartDisplay(); };
+        window.addToCart = function(productId) { 
+            // 最初の1品目が追加された瞬間にIDを事前発行する
+            if (Object.keys(cart).length === 0 && !currentPaymentId) {
+                currentPaymentId = doc(collection(db, "sales")).id;
+            }
+            cart[productId] = (cart[productId] || 0) + 1; 
+            updateCartDisplay(); 
+        };
+        
         window.changeQuantity = function(productId, delta) {
             if (cart[productId] + delta > 0) cart[productId] += delta; else delete cart[productId];
+            // カートが空になったらIDをリセット
+            if (Object.keys(cart).length === 0) currentPaymentId = null;
             updateCartDisplay();
         };
 
@@ -187,7 +178,8 @@
         async function syncToCustomer(status = 'active', displayTotal = '', tendered = '', change = '') {
             await setDoc(doc(db, "state", "current_session"), {
                 cart: cart, mode: currentPaymentMode, status: status,
-                totalDisplay: displayTotal, tenderedDisplay: tendered, changeDisplay: change
+                totalDisplay: displayTotal, tenderedDisplay: tendered, changeDisplay: change,
+                paymentId: currentPaymentId // ★IDを客側に送る
             });
         }
 
@@ -224,9 +216,8 @@
             syncToCustomer('active', totalText);
         }
 
-        window.resetCart = function() { cart = {}; updateCartDisplay(); };
+        window.resetCart = function() { cart = {}; currentPaymentId = null; updateCartDisplay(); };
 
-        // --- モーダル制御 ---
         const modal = document.getElementById('modal');
         function showModal(title, bodyHtml, buttonsHtml) {
             document.getElementById('modal-title').innerText = title;
@@ -236,50 +227,29 @@
         }
         window.closeModal = function() { modal.style.display = 'none'; };
 
-        // --- レジ用テンキー処理 ---
         let tenderedStr = "0";
         window.typeNumpad = function(val) {
-            if (val === 'C') {
-                tenderedStr = "0";
-            } else if (val === 'exact') {
-                tenderedStr = currentTotalSum.toString();
-            } else {
-                // '00' や数字の入力処理。既存が "0" の場合は置き換え、それ以外は末尾に追加
-                if (tenderedStr === "0") {
-                    // "00" を最初に押した場合は "0" のまま
-                    tenderedStr = val === '00' ? "0" : val.toString();
-                } else {
-                    tenderedStr += val.toString();
-                }
+            if (val === 'C') { tenderedStr = "0"; } 
+            else if (val === 'exact') { tenderedStr = currentTotalSum.toString(); } 
+            else {
+                if (tenderedStr === "0") tenderedStr = val === '00' ? "0" : val.toString();
+                else tenderedStr += val.toString();
             }
             updateCashCalc();
         };
 
         function updateCashCalc() {
-            // 文字列を数値に変換（空になったら0にする）
             const tendered = tenderedStr ? parseInt(tenderedStr, 10) : 0;
             const change = tendered - currentTotalSum;
             document.getElementById('modal-tendered').innerText = tendered + '円';
-            
             const changeEl = document.getElementById('modal-change');
             const confirmBtn = document.getElementById('btn-execute-checkout');
-            
-            if (change >= 0) {
-                changeEl.innerText = change + '円';
-                changeEl.style.color = '#28a745';
-                confirmBtn.disabled = false;
-            } else {
-                changeEl.innerText = '不足 ' + Math.abs(change) + '円';
-                changeEl.style.color = '#d9534f';
-                confirmBtn.disabled = true;
-            }
+            if (change >= 0) { changeEl.innerText = change + '円'; changeEl.style.color = '#28a745'; confirmBtn.disabled = false; } 
+            else { changeEl.innerText = '不足 ' + Math.abs(change) + '円'; changeEl.style.color = '#d9534f'; confirmBtn.disabled = true; }
         }
 
         window.openCheckoutModal = function() {
-            if (Object.keys(cart).length === 0) {
-                showModal('エラー', '商品が選択されていません。', `<button class="modal-btn btn-ok" onclick="closeModal()">OK</button>`);
-                return;
-            }
+            if (Object.keys(cart).length === 0) return;
 
             if (currentPaymentMode === 'ticket') {
                 showModal('会計確認', `<div style="font-size:2rem; font-weight:bold; margin: 20px 0;">合計: ${currentTotalCount}枚</div>チケットを受け取ってください。`,
@@ -287,56 +257,47 @@
                      <button class="modal-btn btn-ok" onclick="executeCheckout(0, 0)">確定する</button>`
                 );
             } else {
-                tenderedStr = "0"; // 初期状態は0円
+                tenderedStr = "0"; 
                 const bodyHtml = `
                     <div class="calc-row"><span>合計:</span><span class="calc-val">${currentTotalSum}円</span></div>
                     <div class="calc-row"><span>お預かり:</span><span class="calc-val" id="modal-tendered">0円</span></div>
                     <div class="calc-row"><span>お釣り:</span><span class="calc-val change-val" id="modal-change">不足 ${currentTotalSum}円</span></div>
                     <hr style="margin:15px 0;">
                     <div class="numpad">
-                        <button class="num-btn" onclick="typeNumpad(1)">1</button>
-                        <button class="num-btn" onclick="typeNumpad(2)">2</button>
-                        <button class="num-btn" onclick="typeNumpad(3)">3</button>
-                        <button class="num-btn" onclick="typeNumpad(4)">4</button>
-                        <button class="num-btn" onclick="typeNumpad(5)">5</button>
-                        <button class="num-btn" onclick="typeNumpad(6)">6</button>
-                        <button class="num-btn" onclick="typeNumpad(7)">7</button>
-                        <button class="num-btn" onclick="typeNumpad(8)">8</button>
-                        <button class="num-btn" onclick="typeNumpad(9)">9</button>
-                        <button class="num-btn" onclick="typeNumpad(0)">0</button>
-                        <button class="num-btn" onclick="typeNumpad('00')">00</button>
-                        <button class="num-btn clear" onclick="typeNumpad('C')">C</button>
+                        <button class="num-btn" onclick="typeNumpad(1)">1</button><button class="num-btn" onclick="typeNumpad(2)">2</button><button class="num-btn" onclick="typeNumpad(3)">3</button>
+                        <button class="num-btn" onclick="typeNumpad(4)">4</button><button class="num-btn" onclick="typeNumpad(5)">5</button><button class="num-btn" onclick="typeNumpad(6)">6</button>
+                        <button class="num-btn" onclick="typeNumpad(7)">7</button><button class="num-btn" onclick="typeNumpad(8)">8</button><button class="num-btn" onclick="typeNumpad(9)">9</button>
+                        <button class="num-btn" onclick="typeNumpad(0)">0</button><button class="num-btn" onclick="typeNumpad('00')">00</button><button class="num-btn clear" onclick="typeNumpad('C')">C</button>
                         <button class="num-btn exact" onclick="typeNumpad('exact')">ピッタリ</button>
                     </div>`;
                 showModal('お預かり・お釣り計算', bodyHtml,
                     `<button class="modal-btn btn-cancel" onclick="closeModal()">キャンセル</button>
                      <button class="modal-btn btn-ok" id="btn-execute-checkout" onclick="executeCashCheckout()" disabled>確定する</button>`
                 );
-                updateCashCalc(); // モーダルを開いた瞬間の状態を反映
+                updateCashCalc(); 
             }
         };
 
         window.executeCashCheckout = function() {
             const tendered = parseInt(tenderedStr, 10);
-            const change = tendered - currentTotalSum;
-            executeCheckout(tendered, change);
+            executeCheckout(tendered, tendered - currentTotalSum);
         };
 
         window.executeCheckout = async function(tendered, change) {
             closeModal();
             const totalText = document.getElementById('total-display').innerText;
             
-            // 売上保存
-            const docRef = await addDoc(collection(db, "sales"), {
+            // ★事前発行したIDを使って保存
+            const finalId = currentPaymentId || doc(collection(db, "sales")).id;
+            
+            await setDoc(doc(db, "sales", finalId), {
                 mode: currentPaymentMode, cart: cart, totalText: totalText, createdAt: serverTimestamp()
             });
 
-            // 客画面へ完了と金額（お釣り含む）を送信
             const tenderedTxt = currentPaymentMode === 'cash' ? tendered + '円' : '';
             const changeTxt = currentPaymentMode === 'cash' ? change + '円' : '';
             await syncToCustomer('completed', totalText, tenderedTxt, changeTxt);
 
-            // 完了モーダル表示
             let completeMsg = `<div style="font-size:2rem;color:#28a745;font-weight:bold;margin:20px 0;">決済完了</div>`;
             if (currentPaymentMode === 'cash') completeMsg += `<div style="font-size:1.5rem;">お釣り: <b style="color:#d9534f;">${change}円</b></div>`;
             
@@ -344,7 +305,6 @@
             resetCart();
         };
 
-        // --- 管理機能 ---
         onSnapshot(query(collection(db, "sales"), orderBy("createdAt", "desc")), (snapshot) => {
             const tbody = document.getElementById('history-body');
             tbody.innerHTML = '';
@@ -367,11 +327,8 @@
                  <button class="modal-btn" style="background:#dc3545;color:white;" onclick="executeDelete('${id}')">削除する</button>`
             );
         };
-        window.executeDelete = async function(id) {
-            closeModal(); await deleteDoc(doc(db, "sales", id));
-        };
+        window.executeDelete = async function(id) { closeModal(); await deleteDoc(doc(db, "sales", id)); };
 
-        // 初期化
         setPaymentMode('ticket'); 
     </script>
 </body>
