@@ -5,221 +5,59 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ドリンク販売 - お客さま側モニター</title>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: sans-serif;
-            user-select: none;
-        }
-
-        body {
-            background-color: #1a1a1a;
-            color: #ffffff;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
-            padding: 30px;
-        }
-
-        /* ヘッダー */
-        .header {
-            font-size: 1.8rem;
-            font-weight: bold;
-            color: #aaa;
-            border-bottom: 2px solid #333;
-            padding-bottom: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .payment-badge {
-            background-color: #007bff;
-            color: white;
-            padding: 5px 20px;
-            border-radius: 30px;
-            font-size: 1.5rem;
-        }
-
-        /* メインコンテンツ（左右分割） */
-        .content {
-            flex: 1;
-            display: flex;
-            gap: 30px;
-            margin-top: 20px;
-            overflow: hidden;
-        }
-
-        /* 左側：注文リスト */
-        .order-list-pane {
-            flex: 1.2;
-            background-color: #2a2a2a;
-            border-radius: 15px;
-            padding: 25px;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
-            overflow-y: auto;
-        }
-
-        .pane-title {
-            font-size: 1.5rem;
-            color: #bbb;
-            margin-bottom: 15px;
-            border-bottom: 1px solid #444;
-            padding-bottom: 10px;
-        }
-
-        .items-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .customer-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: #333;
-            padding: 15px 20px;
-            border-radius: 10px;
-            font-size: 1.6rem;
-        }
-
-        .customer-item-price {
-            color: #ffc107;
-            font-weight: bold;
-        }
-
-        /* 右側：合計金額 */
-        .total-pane {
-            flex: 1;
-            background-color: #2a2a2a;
-            border-radius: 15px;
-            padding: 25px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
-        }
-
-        .total-label {
-            font-size: 2rem;
-            color: #aaa;
-            text-align: center;
-        }
-
-        .total-value {
-            font-size: 5.5rem;
-            font-weight: bold;
-            color: #28a745;
-            text-align: center;
-            background-color: #1f1f1f;
-            padding: 30px;
-            border-radius: 15px;
-            border: 2px solid #444;
-        }
-
-        .empty-message {
-            text-align: center;
-            color: #666;
-            font-size: 1.8rem;
-            margin-top: 80px;
-        }
-
-        /* 完了メッセージオーバーレイ（会計時にパッと表示用） */
-        .complete-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background-color: rgba(0, 0, 0, 0.85);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            gap: 20px;
-            z-index: 1000;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-        }
-
-        .complete-overlay.show {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .complete-text {
-            font-size: 4rem;
-            font-weight: bold;
-            color: #28a745;
-        }
-
-        .complete-sub {
-            font-size: 2rem;
-            color: #ccc;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; user-select: none; }
+        body { background-color: #1a1a1a; color: #ffffff; display: flex; flex-direction: column; height: 100vh; overflow: hidden; padding: 30px; }
+        .header { font-size: 1.8rem; font-weight: bold; color: #aaa; border-bottom: 2px solid #333; padding-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .payment-badge { background-color: #007bff; color: white; padding: 5px 20px; border-radius: 30px; font-size: 1.5rem; }
+        .content { flex: 1; display: flex; gap: 30px; margin-top: 20px; overflow: hidden; }
+        .order-list-pane { flex: 1.2; background-color: #2a2a2a; border-radius: 15px; padding: 25px; display: flex; flex-direction: column; box-shadow: 0 8px 20px rgba(0,0,0,0.5); overflow-y: auto; }
+        .pane-title { font-size: 1.5rem; color: #bbb; margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .items-container { flex: 1; display: flex; flex-direction: column; gap: 12px; }
+        .customer-item { display: flex; justify-content: space-between; align-items: center; background-color: #333; padding: 15px 20px; border-radius: 10px; font-size: 1.6rem; }
+        .customer-item-price { color: #ffc107; font-weight: bold; }
+        .total-pane { flex: 1; background-color: #2a2a2a; border-radius: 15px; padding: 25px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 8px 20px rgba(0,0,0,0.5); }
+        .total-label { font-size: 2rem; color: #aaa; text-align: center; }
+        .total-value { font-size: 5.5rem; font-weight: bold; color: #28a745; text-align: center; background-color: #1f1f1f; padding: 30px; border-radius: 15px; border: 2px solid #444; }
+        .empty-message { text-align: center; color: #666; font-size: 1.8rem; margin-top: 80px; }
+        .complete-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .complete-overlay.show { opacity: 1; pointer-events: auto; }
+        .complete-text { font-size: 4rem; font-weight: bold; color: #28a745; }
     </style>
 </head>
 <body>
 
     <div class="header">
         <span>ご注文内容の確認</span>
-        <span class="payment-badge" id="payment-badge-display">現金</span>
+        <span class="payment-badge" id="payment-badge-display">-</span>
     </div>
 
     <div class="content">
-        <!-- 左側：選ばれた商品一覧 -->
         <div class="order-list-pane">
             <div class="pane-title">商品明細</div>
             <div class="items-container" id="customer-items-container">
-                <div class="empty-message">いらっしゃいませ！<br>商品を選んでください</div>
+                <div class="empty-message">いらっしゃいませ！</div>
             </div>
         </div>
 
-        <!-- 右側：合計 -->
         <div class="total-pane">
             <div class="total-label">お支払い合計</div>
             <div class="total-value" id="customer-total-display">0円</div>
         </div>
     </div>
 
-    <!-- 会計完了時の画面 -->
     <div class="complete-overlay" id="complete-overlay">
         <div class="complete-text">ありがとうございました！</div>
-        <div class="complete-sub" id="complete-sub-text"></div>
     </div>
 
     <script>
-        // 商品マスター（操作側と共通）
-        const products = [
-            { id: 'water', name: 'お水', cashPrice: 200 },
-            { id: 'tea', name: 'お茶', cashPrice: 200 },
-            { id: 'calpis', name: 'カルピス', cashPrice: 200 },
-            { id: 'calpis_soda', name: 'カルピスソーダ', cashPrice: 200 },
-            { id: 'orange', name: 'オレンジジュース', cashPrice: 200 },
-            { id: 'cola', name: 'コーラ', cashPrice: 200 },
-            { id: 'redbull', name: 'レッドブル', cashPrice: 300 },
-            { id: 'redbull_purple', name: 'レッドブルパープル', cashPrice: 300 }
-        ];
-
-        // localStorageを通じて操作側とデータを同期する仕組み
-        // （後ほどFirebase連携に置き換える前の、簡易ローカル同期版です）
+        // リアルタイムに操作画面からの状態変更を監視する
         window.addEventListener('storage', (event) => {
             if (event.key === 'pos_cart_state') {
-                updateCustomerDisplay();
+                updateDisplay();
             }
         });
 
-        // 定期的にローカルストレージを監視してリアルタイム反映（タブ間通信用）
-        setInterval(updateCustomerDisplay, 200);
-
-        function updateCustomerDisplay() {
+        function updateDisplay() {
             const rawData = localStorage.getItem('pos_cart_state');
             if (!rawData) return;
 
@@ -227,72 +65,54 @@
             const container = document.getElementById('customer-items-container');
             const totalDisplay = document.getElementById('customer-total-display');
             const badgeDisplay = document.getElementById('payment-badge-display');
+            const overlay = document.getElementById('complete-overlay');
 
-            // 支払方法バッジの更新
             badgeDisplay.innerText = state.mode === 'cash' ? '現金' : 'ドリンクチケット';
 
-            // カートが空の場合
+            // 会計完了演出
+            if (state.status === 'completed') {
+                overlay.classList.add('show');
+                setTimeout(() => { overlay.classList.remove('show'); }, 3000);
+            }
+
             const productKeys = Object.keys(state.cart);
             if (productKeys.length === 0) {
-                if (state.status === 'completed') {
-                    // 会計完了演出
-                    showCompleteScreen(state.lastTotalText, state.mode);
-                    return;
-                } else {
-                    hideCompleteScreen();
-                }
-
-                container.innerHTML = '<div class="empty-message">いらっしゃいませ！<br>商品を選んでください</div>';
+                container.innerHTML = '<div class="empty-message">いらっしゃいませ！</div>';
                 totalDisplay.innerText = state.mode === 'cash' ? '0円' : '0枚';
                 return;
             }
 
-            hideCompleteScreen();
             container.innerHTML = '';
             let totalSum = 0;
             let totalCount = 0;
 
+            // 商品一覧の再構成（計算ロジック）
             productKeys.forEach(productId => {
-                const product = products.find(p => p.id === productId);
                 const count = state.cart[productId];
                 totalCount += count;
-
-                let itemPrice = state.mode === 'cash' ? product.cashPrice * count : count;
-                if (state.mode === 'cash') {
-                    totalSum += itemPrice;
-                }
+                
+                // 価格計算（商品マスター情報は操作画面と一致させる必要があります）
+                const price = productId.includes('redbull') ? 300 : 200;
+                let subtotal = state.mode === 'cash' ? price * count : count;
+                if (state.mode === 'cash') totalSum += subtotal;
 
                 const itemDiv = document.createElement('div');
                 itemDiv.className = 'customer-item';
+                // 商品名のマッピング用簡易テーブル
+                const names = {water:'お水', tea:'お茶', calpis:'カルピス', calpis_soda:'カルピスソーダ', orange:'オレンジジュース', cola:'コーラ', redbull:'レッドブル', redbull_purple:'レッドブルパープル'};
                 itemDiv.innerHTML = `
-                    <span>${product.name} × ${count}</span>
-                    <span class="customer-item-price">${state.mode === 'cash' ? itemPrice + '円' : count + '枚'}</span>
+                    <span>${names[productId]} × ${count}</span>
+                    <span class="customer-item-price">${state.mode === 'cash' ? subtotal + '円' : count + '枚'}</span>
                 `;
                 container.appendChild(itemDiv);
             });
 
-            // 合計表示
-            if (state.mode === 'cash') {
-                totalDisplay.innerText = `${totalSum}円`;
-            } else {
-                totalDisplay.innerText = `${totalCount}枚`;
-            }
+            totalDisplay.innerText = state.mode === 'cash' ? `${totalSum}円` : `${totalCount}枚`;
         }
 
-        function showCompleteScreen(totalText, mode) {
-            const overlay = document.getElementById('complete-overlay');
-            const subText = document.getElementById('complete-sub-text');
-            subText.innerText = `合計 (${mode === 'cash' ? '現金' : 'チケット'}): ${totalText}`;
-            overlay.classList.add('show');
-        }
-
-        function hideCompleteScreen() {
-            const overlay = document.getElementById('complete-overlay');
-            overlay.classList.remove('show');
-        }
-
-        // 初期表示
-        updateCustomerDisplay();
+        // 定期監視
+        setInterval(updateDisplay, 200);
+        updateDisplay();
     </script>
 </body>
 </html>
