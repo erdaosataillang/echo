@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>イベントドリンクレジ - 操作＆管理画面</title>
     <style>
-        /* CSSは前回から変更なしのため、長さを抑えるため省略せず記載します */
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; user-select: none; }
         body { background-color: #f0f2f5; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         .header { background: #333; color: white; display: flex; padding: 10px 20px; gap: 20px; align-items: center; }
@@ -135,7 +134,13 @@
 
         let currentPaymentMode = 'ticket';
         let cart = {};
-        let currentPaymentId = null; // ★事前発行する決済ID
+        let currentPaymentId = null; // 決済ID
+
+        // ★ 新しい決済IDを発行する関数
+        function issueNewPaymentId() {
+            currentPaymentId = doc(collection(db, "sales")).id;
+            updateCartDisplay(); // 状態を送信
+        }
 
         window.setPaymentMode = function(mode) {
             currentPaymentMode = mode;
@@ -157,18 +162,12 @@
         }
 
         window.addToCart = function(productId) { 
-            // 最初の1品目が追加された瞬間にIDを事前発行する
-            if (Object.keys(cart).length === 0 && !currentPaymentId) {
-                currentPaymentId = doc(collection(db, "sales")).id;
-            }
             cart[productId] = (cart[productId] || 0) + 1; 
             updateCartDisplay(); 
         };
         
         window.changeQuantity = function(productId, delta) {
             if (cart[productId] + delta > 0) cart[productId] += delta; else delete cart[productId];
-            // カートが空になったらIDをリセット
-            if (Object.keys(cart).length === 0) currentPaymentId = null;
             updateCartDisplay();
         };
 
@@ -176,10 +175,11 @@
         let currentTotalCount = 0;
 
         async function syncToCustomer(status = 'active', displayTotal = '', tendered = '', change = '') {
+            // ★ currentPaymentId を常に送信
             await setDoc(doc(db, "state", "current_session"), {
                 cart: cart, mode: currentPaymentMode, status: status,
                 totalDisplay: displayTotal, tenderedDisplay: tendered, changeDisplay: change,
-                paymentId: currentPaymentId // ★IDを客側に送る
+                paymentId: currentPaymentId 
             });
         }
 
@@ -216,7 +216,7 @@
             syncToCustomer('active', totalText);
         }
 
-        window.resetCart = function() { cart = {}; currentPaymentId = null; updateCartDisplay(); };
+        window.resetCart = function() { cart = {}; updateCartDisplay(); };
 
         const modal = document.getElementById('modal');
         function showModal(title, bodyHtml, buttonsHtml) {
@@ -288,9 +288,7 @@
             const totalText = document.getElementById('total-display').innerText;
             
             // ★事前発行したIDを使って保存
-            const finalId = currentPaymentId || doc(collection(db, "sales")).id;
-            
-            await setDoc(doc(db, "sales", finalId), {
+            await setDoc(doc(db, "sales", currentPaymentId), {
                 mode: currentPaymentMode, cart: cart, totalText: totalText, createdAt: serverTimestamp()
             });
 
@@ -301,9 +299,15 @@
             let completeMsg = `<div style="font-size:2rem;color:#28a745;font-weight:bold;margin:20px 0;">決済完了</div>`;
             if (currentPaymentMode === 'cash') completeMsg += `<div style="font-size:1.5rem;">お釣り: <b style="color:#d9534f;">${change}円</b></div>`;
             
-            showModal('完了', completeMsg, `<button class="modal-btn btn-ok" onclick="closeModal()">次のお客様へ</button>`);
-            resetCart();
+            showModal('完了', completeMsg, `<button class="modal-btn btn-ok" onclick="nextCustomer()">次のお客様へ</button>`);
         };
+
+        // ★「次のお客様へ」を押した時の処理
+        window.nextCustomer = function() {
+            closeModal();
+            cart = {};
+            issueNewPaymentId(); // 新しいIDを発行して客画面のQRを更新
+        }
 
         onSnapshot(query(collection(db, "sales"), orderBy("createdAt", "desc")), (snapshot) => {
             const tbody = document.getElementById('history-body');
@@ -329,7 +333,9 @@
         };
         window.executeDelete = async function(id) { closeModal(); await deleteDoc(doc(db, "sales", id)); };
 
+        // ★初期化処理：画面を開いた時に最初のIDを発行
         setPaymentMode('ticket'); 
+        issueNewPaymentId();
     </script>
 </body>
 </html>
