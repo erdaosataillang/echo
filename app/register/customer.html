@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ドリンク販売 - お客さま側モニター</title>
+    <!-- QRコード生成ライブラリ -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
         body { background-color: #1a1a1a; color: #ffffff; display: flex; flex-direction: column; height: 100vh; overflow: hidden; padding: 30px; }
@@ -21,9 +23,13 @@
         
         .total-pane { flex: 1; background-color: #2a2a2a; border-radius: 15px; padding: 25px; display: flex; flex-direction: column; justify-content: space-between; }
         .total-label { font-size: 2rem; color: #aaa; text-align: center; }
-        .total-value { font-size: 6rem; font-weight: bold; color: #28a745; text-align: center; background-color: #1f1f1f; padding: 40px 20px; border-radius: 15px; border: 2px solid #444; }
+        .total-value { font-size: 5rem; font-weight: bold; color: #28a745; text-align: center; background-color: #1f1f1f; padding: 30px 20px; border-radius: 15px; border: 2px solid #444; }
         
         .empty-message { text-align: center; color: #666; font-size: 2rem; margin-top: 100px; }
+        
+        /* QRコード表示エリア（通常時） */
+        .qr-box { display: none; text-align: center; background: #111; padding: 15px; border-radius: 10px; border: 2px solid #333; margin-top: 15px; }
+        .qr-title { color: #ffc107; font-size: 1.3rem; font-weight: bold; margin-bottom: 10px; }
         
         /* 完了画面オーバーレイ */
         .complete-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.95); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; gap: 30px; }
@@ -31,6 +37,9 @@
         .complete-details { font-size: 3rem; color: #fff; background: #222; padding: 40px; border-radius: 20px; border: 2px solid #444; text-align: right; }
         .detail-row { display: flex; justify-content: space-between; gap: 100px; margin: 10px 0; }
         .detail-change { color: #ffc107; font-weight: bold; font-size: 4rem; margin-top: 20px; padding-top: 20px; border-top: 2px dashed #666; }
+        
+        /* QRコード表示エリア（完了画面） */
+        .overlay-qr-box { display: none; text-align: center; background: #222; padding: 20px; border-radius: 20px; border: 2px dashed #ffc107; margin-top: 20px; }
     </style>
 </head>
 <body>
@@ -48,8 +57,16 @@
             </div>
         </div>
         <div class="total-pane">
-            <div class="total-label">お支払い合計</div>
-            <div class="total-value" id="total">0枚</div>
+            <div>
+                <div class="total-label">お支払い合計</div>
+                <div class="total-value" id="total">0枚</div>
+            </div>
+            
+            <!-- 会計中に表示するQRコード -->
+            <div class="qr-box" id="qr-box">
+                <div class="qr-title">🎁 2杯で1杯無料！<br>スキャンしてポイントGET</div>
+                <canvas id="qr-canvas"></canvas>
+            </div>
         </div>
     </div>
 
@@ -57,6 +74,12 @@
     <div class="complete-overlay" id="overlay">
         <div class="complete-text">ありがとうございました！</div>
         <div class="complete-details" id="overlay-details"></div>
+        
+        <!-- 完了画面に残しておくQRコード -->
+        <div class="overlay-qr-box" id="overlay-qr-box">
+            <div class="qr-title" style="font-size: 1.8rem;">ポイントの受け取りはお済みですか？</div>
+            <canvas id="overlay-qr-canvas"></canvas>
+        </div>
     </div>
 
     <script type="module">
@@ -75,6 +98,17 @@
 
         const db = getFirestore(initializeApp(firebaseConfig));
         const products = { water:'お水', tea:'お茶', calpis:'カルピス', calpis_soda:'カルピスソーダ', orange:'オレンジジュース', cola:'コーラ', redbull:'レッドブル', redbull_purple:'レッドブルパープル' };
+
+        // QRコード生成関数
+        function renderQR(paymentId, canvasId, size) {
+            new QRious({
+                element: document.getElementById(canvasId),
+                value: `https://echo.urakatabu.com?drinkid=${paymentId}`,
+                size: size,
+                background: '#ffffff',
+                foreground: '#000000'
+            });
+        }
 
         onSnapshot(doc(db, "state", "current_session"), (docSnap) => {
             const state = docSnap.data();
@@ -95,19 +129,35 @@
                     details.innerHTML = `<div class="detail-row"><span>合計:</span> <span>${state.totalDisplay}</span></div>`;
                 }
                 
+                // 完了画面にもQRコードを表示
+                if (state.paymentId) {
+                    document.getElementById('overlay-qr-box').style.display = 'block';
+                    renderQR(state.paymentId, 'overlay-qr-canvas', 200);
+                } else {
+                    document.getElementById('overlay-qr-box').style.display = 'none';
+                }
+
                 document.getElementById('overlay').style.display = 'flex';
-                setTimeout(() => { document.getElementById('overlay').style.display = 'none'; }, 4000); // 4秒表示
+                // QRを読み取る時間も考慮して完了画面は少し長め（6秒）に表示
+                setTimeout(() => { document.getElementById('overlay').style.display = 'none'; }, 6000); 
                 return; 
             }
 
             document.getElementById('overlay').style.display = 'none';
 
-            // リストの描画
+            // 会計中の通常画面
             const itemsDiv = document.getElementById('items');
             if (Object.keys(state.cart).length === 0) {
                 itemsDiv.innerHTML = '<div class="empty-message">いらっしゃいませ！</div>';
                 document.getElementById('total').innerText = state.mode === 'cash' ? '0円' : '0枚';
+                document.getElementById('qr-box').style.display = 'none'; // カートが空ならQRを消す
                 return;
+            }
+
+            // QRコードの表示
+            if (state.paymentId) {
+                document.getElementById('qr-box').style.display = 'block';
+                renderQR(state.paymentId, 'qr-canvas', 160);
             }
 
             itemsDiv.innerHTML = '';
