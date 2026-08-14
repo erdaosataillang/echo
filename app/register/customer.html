@@ -5,114 +5,114 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ドリンク販売 - お客さま側モニター</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; user-select: none; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
         body { background-color: #1a1a1a; color: #ffffff; display: flex; flex-direction: column; height: 100vh; overflow: hidden; padding: 30px; }
+        
         .header { font-size: 1.8rem; font-weight: bold; color: #aaa; border-bottom: 2px solid #333; padding-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
         .payment-badge { background-color: #007bff; color: white; padding: 5px 20px; border-radius: 30px; font-size: 1.5rem; }
-        .content { flex: 1; display: flex; gap: 30px; margin-top: 20px; overflow: hidden; }
-        .order-list-pane { flex: 1.2; background-color: #2a2a2a; border-radius: 15px; padding: 25px; display: flex; flex-direction: column; box-shadow: 0 8px 20px rgba(0,0,0,0.5); overflow-y: auto; }
+        
+        .content { flex: 1; display: flex; gap: 30px; margin-top: 20px; }
+        .order-list-pane { flex: 1.2; background-color: #2a2a2a; border-radius: 15px; padding: 25px; display: flex; flex-direction: column; }
         .pane-title { font-size: 1.5rem; color: #bbb; margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px; }
-        .items-container { flex: 1; display: flex; flex-direction: column; gap: 12px; }
-        .customer-item { display: flex; justify-content: space-between; align-items: center; background-color: #333; padding: 15px 20px; border-radius: 10px; font-size: 1.6rem; }
+        .items-container { flex: 1; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
+        
+        .customer-item { display: flex; justify-content: space-between; align-items: center; background-color: #333; padding: 15px 20px; border-radius: 10px; font-size: 1.8rem; }
         .customer-item-price { color: #ffc107; font-weight: bold; }
-        .total-pane { flex: 1; background-color: #2a2a2a; border-radius: 15px; padding: 25px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 8px 20px rgba(0,0,0,0.5); }
+        
+        .total-pane { flex: 1; background-color: #2a2a2a; border-radius: 15px; padding: 25px; display: flex; flex-direction: column; justify-content: space-between; }
         .total-label { font-size: 2rem; color: #aaa; text-align: center; }
-        .total-value { font-size: 5.5rem; font-weight: bold; color: #28a745; text-align: center; background-color: #1f1f1f; padding: 30px; border-radius: 15px; border: 2px solid #444; }
-        .empty-message { text-align: center; color: #666; font-size: 1.8rem; margin-top: 80px; }
-        .complete-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
-        .complete-overlay.show { opacity: 1; pointer-events: auto; }
-        .complete-text { font-size: 4rem; font-weight: bold; color: #28a745; }
+        .total-value { font-size: 6rem; font-weight: bold; color: #28a745; text-align: center; background-color: #1f1f1f; padding: 40px 20px; border-radius: 15px; border: 2px solid #444; }
+        
+        .empty-message { text-align: center; color: #666; font-size: 2rem; margin-top: 100px; }
+        
+        /* 完了画面オーバーレイ */
+        .complete-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.9); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; }
+        .complete-text { font-size: 6rem; font-weight: bold; color: #28a745; margin-bottom: 20px; }
+        .complete-sub { font-size: 3rem; color: #ccc; }
     </style>
 </head>
 <body>
 
     <div class="header">
         <span>ご注文内容の確認</span>
-        <span class="payment-badge" id="payment-badge-display">-</span>
+        <span class="payment-badge" id="badge">現金</span>
     </div>
 
     <div class="content">
         <div class="order-list-pane">
             <div class="pane-title">商品明細</div>
-            <div class="items-container" id="customer-items-container">
+            <div class="items-container" id="items">
                 <div class="empty-message">いらっしゃいませ！</div>
             </div>
         </div>
-
         <div class="total-pane">
             <div class="total-label">お支払い合計</div>
-            <div class="total-value" id="customer-total-display">0円</div>
+            <div class="total-value" id="total">0円</div>
         </div>
     </div>
 
-    <div class="complete-overlay" id="complete-overlay">
+    <div class="complete-overlay" id="overlay">
         <div class="complete-text">ありがとうございました！</div>
+        <div class="complete-sub" id="overlay-sub"></div>
     </div>
 
-    <script>
-        // リアルタイムに操作画面からの状態変更を監視する
-        window.addEventListener('storage', (event) => {
-            if (event.key === 'pos_cart_state') {
-                updateDisplay();
-            }
-        });
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        function updateDisplay() {
-            const rawData = localStorage.getItem('pos_cart_state');
-            if (!rawData) return;
+        const firebaseConfig = {
+            apiKey: "AIzaSyA6Toofq1A0qDUgJFimU6C0aZuz-L1RuN8",
+            authDomain: "echo-4bc7e.firebaseapp.com",
+            projectId: "echo-4bc7e",
+            storageBucket: "echo-4bc7e.firebasestorage.app",
+            messagingSenderId: "206573954980",
+            appId: "1:206573954980:web:f9d5ab978e12bd83664331",
+            measurementId: "G-7MLE8EGBM7"
+        };
 
-            const state = JSON.parse(rawData);
-            const container = document.getElementById('customer-items-container');
-            const totalDisplay = document.getElementById('customer-total-display');
-            const badgeDisplay = document.getElementById('payment-badge-display');
-            const overlay = document.getElementById('complete-overlay');
+        const db = getFirestore(initializeApp(firebaseConfig));
+        const products = { water:'お水', tea:'お茶', calpis:'カルピス', calpis_soda:'カルピスソーダ', orange:'オレンジジュース', cola:'コーラ', redbull:'レッドブル', redbull_purple:'レッドブルパープル' };
 
-            badgeDisplay.innerText = state.mode === 'cash' ? '現金' : 'ドリンクチケット';
+        // 状態ドキュメントを監視してリアルタイム更新
+        onSnapshot(doc(db, "state", "current_session"), (docSnap) => {
+            const state = docSnap.data();
+            if (!state) return;
 
-            // 会計完了演出
+            document.getElementById('badge').innerText = state.mode === 'cash' ? '現金' : 'ドリンクチケット';
+            
+            // 会計完了時
             if (state.status === 'completed') {
-                overlay.classList.add('show');
-                setTimeout(() => { overlay.classList.remove('show'); }, 3000);
+                document.getElementById('overlay-sub').innerText = `合計: ${state.totalDisplay}`;
+                document.getElementById('overlay').style.display = 'flex';
+                // 3秒後に非表示
+                setTimeout(() => { document.getElementById('overlay').style.display = 'none'; }, 3000);
+                return; // 完了時はリスト更新をスキップ
             }
 
-            const productKeys = Object.keys(state.cart);
-            if (productKeys.length === 0) {
-                container.innerHTML = '<div class="empty-message">いらっしゃいませ！</div>';
-                totalDisplay.innerText = state.mode === 'cash' ? '0円' : '0枚';
+            document.getElementById('overlay').style.display = 'none';
+
+            // リストの描画
+            const itemsDiv = document.getElementById('items');
+            if (Object.keys(state.cart).length === 0) {
+                itemsDiv.innerHTML = '<div class="empty-message">いらっしゃいませ！</div>';
+                document.getElementById('total').innerText = state.mode === 'cash' ? '0円' : '0枚';
                 return;
             }
 
-            container.innerHTML = '';
-            let totalSum = 0;
-            let totalCount = 0;
-
-            // 商品一覧の再構成（計算ロジック）
-            productKeys.forEach(productId => {
-                const count = state.cart[productId];
-                totalCount += count;
+            itemsDiv.innerHTML = '';
+            Object.entries(state.cart).forEach(([id, count]) => {
+                const name = products[id];
+                const price = (id.includes('redbull')) ? 300 : 200;
+                const subText = state.mode === 'cash' ? (price * count) + '円' : count + '枚';
                 
-                // 価格計算（商品マスター情報は操作画面と一致させる必要があります）
-                const price = productId.includes('redbull') ? 300 : 200;
-                let subtotal = state.mode === 'cash' ? price * count : count;
-                if (state.mode === 'cash') totalSum += subtotal;
-
-                const itemDiv = document.createElement('div');
-                itemDiv.className = 'customer-item';
-                // 商品名のマッピング用簡易テーブル
-                const names = {water:'お水', tea:'お茶', calpis:'カルピス', calpis_soda:'カルピスソーダ', orange:'オレンジジュース', cola:'コーラ', redbull:'レッドブル', redbull_purple:'レッドブルパープル'};
-                itemDiv.innerHTML = `
-                    <span>${names[productId]} × ${count}</span>
-                    <span class="customer-item-price">${state.mode === 'cash' ? subtotal + '円' : count + '枚'}</span>
-                `;
-                container.appendChild(itemDiv);
+                itemsDiv.innerHTML += `<div class="customer-item">
+                    <span>${name} × ${count}</span>
+                    <span class="customer-item-price">${subText}</span>
+                </div>`;
             });
 
-            totalDisplay.innerText = state.mode === 'cash' ? `${totalSum}円` : `${totalCount}枚`;
-        }
-
-        // 定期監視
-        setInterval(updateDisplay, 200);
-        updateDisplay();
+            document.getElementById('total').innerText = state.totalDisplay;
+        });
     </script>
 </body>
 </html>
