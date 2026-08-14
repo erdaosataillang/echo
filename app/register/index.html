@@ -69,6 +69,7 @@
         .num-btn { padding: 15px; font-size: 1.5rem; font-weight: bold; background: #f8f9fa; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; }
         .num-btn:active { background: #e9ecef; }
         .num-btn.exact { background: #ffc107; color: #333; grid-column: span 3; }
+        .num-btn.clear { background: #f8d7da; color: #721c24; border-color: #f5c6cb; }
     </style>
 </head>
 <body>
@@ -84,7 +85,6 @@
         <div class="main-pane">
             <div class="payment-selector">
                 <button class="pay-btn" id="btn-cash" onclick="setPaymentMode('cash')">現金</button>
-                <!-- 初期値をチケットにするため active クラスをこちらに -->
                 <button class="pay-btn active" id="btn-ticket" onclick="setPaymentMode('ticket')">ドリンクチケット</button>
             </div>
             <div class="product-grid" id="product-grid"></div>
@@ -153,7 +153,7 @@
             { id: 'redbull', name: 'レッドブル', cashPrice: 300 }, { id: 'redbull_purple', name: 'レッドブルパープル', cashPrice: 300 }
         ];
 
-        let currentPaymentMode = 'ticket'; // デフォルトをチケットに変更
+        let currentPaymentMode = 'ticket';
         let cart = {};
 
         window.setPaymentMode = function(mode) {
@@ -239,14 +239,25 @@
         // --- レジ用テンキー処理 ---
         let tenderedStr = "0";
         window.typeNumpad = function(val) {
-            if(val === 'C') tenderedStr = "0";
-            else if (val === 'exact') tenderedStr = currentTotalSum.toString();
-            else tenderedStr = tenderedStr === "0" ? val.toString() : tenderedStr + val.toString();
+            if (val === 'C') {
+                tenderedStr = "0";
+            } else if (val === 'exact') {
+                tenderedStr = currentTotalSum.toString();
+            } else {
+                // '00' や数字の入力処理。既存が "0" の場合は置き換え、それ以外は末尾に追加
+                if (tenderedStr === "0") {
+                    // "00" を最初に押した場合は "0" のまま
+                    tenderedStr = val === '00' ? "0" : val.toString();
+                } else {
+                    tenderedStr += val.toString();
+                }
+            }
             updateCashCalc();
         };
 
         function updateCashCalc() {
-            const tendered = parseInt(tenderedStr, 10);
+            // 文字列を数値に変換（空になったら0にする）
+            const tendered = tenderedStr ? parseInt(tenderedStr, 10) : 0;
             const change = tendered - currentTotalSum;
             document.getElementById('modal-tendered').innerText = tendered + '円';
             
@@ -276,24 +287,32 @@
                      <button class="modal-btn btn-ok" onclick="executeCheckout(0, 0)">確定する</button>`
                 );
             } else {
-                tenderedStr = currentTotalSum.toString(); // デフォルトはピッタリ
+                tenderedStr = "0"; // 初期状態は0円
                 const bodyHtml = `
                     <div class="calc-row"><span>合計:</span><span class="calc-val">${currentTotalSum}円</span></div>
                     <div class="calc-row"><span>お預かり:</span><span class="calc-val" id="modal-tendered">0円</span></div>
-                    <div class="calc-row"><span>お釣り:</span><span class="calc-val change-val" id="modal-change">0円</span></div>
+                    <div class="calc-row"><span>お釣り:</span><span class="calc-val change-val" id="modal-change">不足 ${currentTotalSum}円</span></div>
                     <hr style="margin:15px 0;">
                     <div class="numpad">
-                        <button class="num-btn" onclick="typeNumpad(7)">7</button><button class="num-btn" onclick="typeNumpad(8)">8</button><button class="num-btn" onclick="typeNumpad(9)">9</button>
-                        <button class="num-btn" onclick="typeNumpad(4)">4</button><button class="num-btn" onclick="typeNumpad(5)">5</button><button class="num-btn" onclick="typeNumpad(6)">6</button>
-                        <button class="num-btn" onclick="typeNumpad(1)">1</button><button class="num-btn" onclick="typeNumpad(2)">2</button><button class="num-btn" onclick="typeNumpad(3)">3</button>
-                        <button class="num-btn" onclick="typeNumpad(0)">0</button><button class="num-btn" onclick="typeNumpad('00')">00</button><button class="num-btn" onclick="typeNumpad('C')">C</button>
+                        <button class="num-btn" onclick="typeNumpad(1)">1</button>
+                        <button class="num-btn" onclick="typeNumpad(2)">2</button>
+                        <button class="num-btn" onclick="typeNumpad(3)">3</button>
+                        <button class="num-btn" onclick="typeNumpad(4)">4</button>
+                        <button class="num-btn" onclick="typeNumpad(5)">5</button>
+                        <button class="num-btn" onclick="typeNumpad(6)">6</button>
+                        <button class="num-btn" onclick="typeNumpad(7)">7</button>
+                        <button class="num-btn" onclick="typeNumpad(8)">8</button>
+                        <button class="num-btn" onclick="typeNumpad(9)">9</button>
+                        <button class="num-btn" onclick="typeNumpad(0)">0</button>
+                        <button class="num-btn" onclick="typeNumpad('00')">00</button>
+                        <button class="num-btn clear" onclick="typeNumpad('C')">C</button>
                         <button class="num-btn exact" onclick="typeNumpad('exact')">ピッタリ</button>
                     </div>`;
                 showModal('お預かり・お釣り計算', bodyHtml,
                     `<button class="modal-btn btn-cancel" onclick="closeModal()">キャンセル</button>
-                     <button class="modal-btn btn-ok" id="btn-execute-checkout" onclick="executeCashCheckout()">確定する</button>`
+                     <button class="modal-btn btn-ok" id="btn-execute-checkout" onclick="executeCashCheckout()" disabled>確定する</button>`
                 );
-                updateCashCalc();
+                updateCashCalc(); // モーダルを開いた瞬間の状態を反映
             }
         };
 
@@ -353,7 +372,7 @@
         };
 
         // 初期化
-        setPaymentMode('ticket'); // 初期ロード時に確実にチケットモードにする
+        setPaymentMode('ticket'); 
     </script>
 </body>
 </html>
