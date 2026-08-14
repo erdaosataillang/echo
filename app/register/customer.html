@@ -10,28 +10,52 @@
         body { background-color: #1a1a1a; color: #ffffff; display: flex; flex-direction: column; height: 100vh; overflow: hidden; padding: 30px; }
         
         .header { font-size: 1.8rem; font-weight: bold; color: #aaa; border-bottom: 2px solid #333; padding-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
-        .payment-badge { background-color: #007bff; color: white; padding: 5px 20px; border-radius: 30px; font-size: 1.5rem; }
+        .payment-badge { background-color: #007bff; color: white; padding: 5px 20px; border-radius: 30px; font-size: 1.5rem; transition: background-color 0.3s; }
         
         .content { flex: 1; display: flex; gap: 30px; margin-top: 20px; }
         .order-list-pane { flex: 1.2; background-color: #2a2a2a; border-radius: 15px; padding: 25px; display: flex; flex-direction: column; }
         .pane-title { font-size: 1.5rem; color: #bbb; margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px; }
         .items-container { flex: 1; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
         
-        .customer-item { display: flex; justify-content: space-between; align-items: center; background-color: #333; padding: 15px 20px; border-radius: 10px; font-size: 1.8rem; }
+        /* ⬇︎ カート商品のフワッと表示アニメーション */
+        @keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .customer-item { 
+            display: flex; justify-content: space-between; align-items: center; 
+            background-color: #333; padding: 15px 20px; border-radius: 10px; font-size: 1.8rem;
+            animation: fadeSlideIn 0.3s ease-out forwards;
+        }
         .customer-item-price { color: #ffc107; font-weight: bold; }
         
         .total-pane { flex: 1; background-color: #2a2a2a; border-radius: 15px; padding: 25px; display: flex; flex-direction: column; justify-content: space-between; }
         .total-label { font-size: 2rem; color: #aaa; text-align: center; }
-        .total-value { font-size: 5rem; font-weight: bold; color: #28a745; text-align: center; background-color: #1f1f1f; padding: 30px 20px; border-radius: 15px; border: 2px solid #444; }
+        .total-value { 
+            font-size: 5rem; font-weight: bold; color: #28a745; text-align: center; 
+            background-color: #1f1f1f; padding: 30px 20px; border-radius: 15px; border: 2px solid #444; 
+            transition: color 0.3s;
+        }
         
-        .empty-message { text-align: center; color: #666; font-size: 2rem; margin-top: 100px; }
+        .empty-message { text-align: center; color: #666; font-size: 2rem; margin-top: 100px; animation: fadeSlideIn 0.5s ease-out; }
         
-        /* QRコード表示エリア（通常時） */
-        .qr-box { display: block; text-align: center; background: #111; padding: 15px; border-radius: 10px; border: 2px solid #333; margin-top: 15px; }
+        /* QRコード表示エリア */
+        .qr-box { display: block; text-align: center; background: #111; padding: 15px; border-radius: 10px; border: 2px solid #333; margin-top: 15px; animation: fadeSlideIn 0.6s ease-out; }
         .qr-title { color: #ffc107; font-size: 1.3rem; font-weight: bold; margin-bottom: 10px; }
         
-        /* 完了画面オーバーレイ */
-        .complete-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.95); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; gap: 30px; }
+        /* ⬇︎ 完了画面のフワッと表示アニメーション (opacityとtransitionを使用) */
+        .complete-overlay { 
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
+            background-color: rgba(0, 0, 0, 0.95); 
+            display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 30px;
+            z-index: 1000; 
+            opacity: 0; pointer-events: none; /* 初期状態は見えない＆触れない */
+            transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .complete-overlay.show { 
+            opacity: 1; pointer-events: auto; /* .showが付くとフワッと現れる */
+        }
+        
         .complete-text { font-size: 5rem; font-weight: bold; color: #28a745; }
         .complete-details { font-size: 3rem; color: #fff; background: #222; padding: 40px; border-radius: 20px; border: 2px solid #444; text-align: right; }
         .detail-row { display: flex; justify-content: space-between; gap: 100px; margin: 10px 0; }
@@ -61,9 +85,9 @@
                 <div class="total-value" id="total">0枚</div>
             </div>
             
-            <!-- 常に表示するQRコード -->
             <div class="qr-box" id="qr-box">
-                <div class="qr-title">🎁 2杯で1杯無料！<br>スキャンしてポイントGET</div>
+                <!-- 絵文字を削除しました -->
+                <div class="qr-title">2杯で1杯無料！<br>スキャンしてポイントGET</div>
                 <canvas id="qr-canvas"></canvas>
             </div>
         </div>
@@ -74,7 +98,6 @@
         <div class="complete-text">ありがとうございました！</div>
         <div class="complete-details" id="overlay-details"></div>
         
-        <!-- 完了画面に残しておくQRコード -->
         <div class="overlay-qr-box" id="overlay-qr-box">
             <div class="qr-title" style="font-size: 1.8rem;">ポイントの受け取りはお済みですか？</div>
             <canvas id="overlay-qr-canvas"></canvas>
@@ -97,6 +120,9 @@
 
         const db = getFirestore(initializeApp(firebaseConfig));
         const products = { water:'お水', tea:'お茶', calpis:'カルピス', calpis_soda:'カルピスソーダ', orange:'オレンジジュース', cola:'コーラ', redbull:'レッドブル', redbull_purple:'レッドブルパープル' };
+        
+        // 連続でアニメーションが発火してチカチカするのを防ぐため、直前のHTMLを記憶
+        let previousCartHtml = "";
 
         function renderQR(paymentId, canvasId, size) {
             new QRious({
@@ -114,13 +140,12 @@
 
             document.getElementById('badge').innerText = state.mode === 'cash' ? '現金' : 'ドリンクチケット';
             
-            // ★常にQRコードを更新
             if (state.paymentId) {
                 renderQR(state.paymentId, 'qr-canvas', 160);
                 document.getElementById('qr-box').style.display = 'block';
             }
             
-            // 会計完了時
+            // 会計完了時（フワッと表示）
             if (state.status === 'completed') {
                 const details = document.getElementById('overlay-details');
                 if (state.mode === 'cash') {
@@ -138,30 +163,47 @@
                     renderQR(state.paymentId, 'overlay-qr-canvas', 200);
                 }
 
-                document.getElementById('overlay').style.display = 'flex';
-                // 次のお客様へボタンが押されるまで表示しっぱなしにする場合は、ここのsetTimeoutを消すこともできます。
-                // （今回はスタッフがボタンを押すまでの繋ぎとして、とりあえず8秒で消えるようにしています）
-                setTimeout(() => { document.getElementById('overlay').style.display = 'none'; }, 8000); 
+                // classを追加してフェードインさせる
+                document.getElementById('overlay').classList.add('show');
+                
+                setTimeout(() => { 
+                    // classを外してフェードアウトさせる
+                    document.getElementById('overlay').classList.remove('show'); 
+                }, 8000); 
                 return; 
             }
 
-            document.getElementById('overlay').style.display = 'none';
+            // 通常画面では完了画面を非表示に
+            document.getElementById('overlay').classList.remove('show');
 
-            // 会計中・待機中画面
             const itemsDiv = document.getElementById('items');
+            
+            // カートが空の場合
             if (Object.keys(state.cart).length === 0) {
-                itemsDiv.innerHTML = '<div class="empty-message">いらっしゃいませ！</div>';
+                const emptyHtml = '<div class="empty-message">いらっしゃいませ！</div>';
+                if (previousCartHtml !== emptyHtml) {
+                    itemsDiv.innerHTML = emptyHtml;
+                    previousCartHtml = emptyHtml;
+                }
                 document.getElementById('total').innerText = state.mode === 'cash' ? '0円' : '0枚';
                 return;
             }
 
-            itemsDiv.innerHTML = '';
+            // カートに商品がある場合
+            let currentCartHtml = '';
             Object.entries(state.cart).forEach(([id, count]) => {
                 const name = products[id];
                 const price = (id.includes('redbull')) ? 300 : 200;
                 const subText = state.mode === 'cash' ? (price * count) + '円' : count + '枚';
-                itemsDiv.innerHTML += `<div class="customer-item"><span>${name} × ${count}</span><span class="customer-item-price">${subText}</span></div>`;
+                currentCartHtml += `<div class="customer-item"><span>${name} × ${count}</span><span class="customer-item-price">${subText}</span></div>`;
             });
+            
+            // 内容が変わった時だけ再描画（不要なアニメーションのチラつきを防止）
+            if (previousCartHtml !== currentCartHtml) {
+                itemsDiv.innerHTML = currentCartHtml;
+                previousCartHtml = currentCartHtml;
+            }
+            
             document.getElementById('total').innerText = state.totalDisplay;
         });
     </script>
