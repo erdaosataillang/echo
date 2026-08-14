@@ -3,60 +3,256 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>レジ操作画面</title>
+    <title>イベントドリンクレジ - 操作＆管理画面</title>
     <style>
-        body { font-family: sans-serif; display: flex; height: 100vh; background: #f0f2f5; margin: 0; }
-        .main-pane { flex: 2; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
-        .side-pane { flex: 1; background: #fff; border-left: 2px solid #ddd; padding: 20px; display: flex; flex-direction: column; }
-        .product-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-        button { padding: 20px; font-size: 1.2rem; cursor: pointer; border-radius: 8px; border: 1px solid #ccc; background: #fff; }
-        button:active { background: #e0e0e0; }
-        .active { background: #007bff !important; color: white; }
-        #total-display { font-size: 2rem; font-weight: bold; margin: 20px 0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; user-select: none; }
+        body { background-color: #f0f2f5; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        
+        /* ヘッダー・タブ切替 */
+        .header { background: #333; color: white; display: flex; padding: 10px 20px; gap: 20px; align-items: center; }
+        .tab-btn { background: none; border: none; color: #aaa; font-size: 1.2rem; cursor: pointer; padding: 10px; }
+        .tab-btn.active { color: white; font-weight: bold; border-bottom: 2px solid white; }
+        
+        /* メインコンテンツエリア */
+        .content-area { flex: 1; display: none; height: 100%; }
+        .content-area.active { display: flex; }
+
+        /* --- レジ画面用CSS --- */
+        .main-pane { flex: 2; display: flex; flex-direction: column; padding: 20px; gap: 20px; overflow-y: auto; }
+        .side-pane { flex: 1; background-color: #ffffff; border-left: 2px solid #e0e0e0; display: flex; flex-direction: column; padding: 20px; box-shadow: -4px 0 10px rgba(0,0,0,0.05); }
+        .payment-selector { display: flex; gap: 15px; }
+        .pay-btn { flex: 1; padding: 15px; font-size: 1.2rem; font-weight: bold; border: 2px solid #ccc; border-radius: 10px; background-color: #fff; cursor: pointer; transition: all 0.2s; }
+        .pay-btn.active { background-color: #007bff; color: #fff; border-color: #0056b3; }
+        .product-grid { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .product-btn { background-color: #fff; border: 2px solid #ddd; border-radius: 12px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 8px; cursor: pointer; padding: 20px 0; }
+        .product-btn:active { transform: scale(0.97); background-color: #f8f9fa; }
+        .product-name { font-size: 1.3rem; font-weight: bold; color: #333; }
+        .product-price { font-size: 1.1rem; color: #666; background-color: #f1f3f5; padding: 4px 12px; border-radius: 20px; }
+        .cart-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 10px; border-bottom: 2px solid #f1f3f5; padding-bottom: 8px; }
+        .cart-items { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+        .cart-item { display: flex; justify-content: space-between; align-items: center; background-color: #f8f9fa; padding: 10px 15px; border-radius: 8px; font-size: 1.1rem; }
+        .qty-btn { width: 30px; height: 30px; font-size: 1rem; font-weight: bold; border: 1px solid #ccc; background-color: #fff; border-radius: 5px; cursor: pointer; margin-left: 10px; }
+        .checkout-section { display: flex; flex-direction: column; gap: 12px; border-top: 2px solid #f1f3f5; padding-top: 15px; }
+        .total-display { display: flex; justify-content: space-between; align-items: center; font-size: 1.4rem; font-weight: bold; }
+        .total-amount { color: #d9534f; font-size: 1.8rem; }
+        .action-buttons { display: flex; gap: 10px; }
+        .btn-reset { flex: 1; padding: 15px; font-size: 1.1rem; font-weight: bold; background-color: #6c757d; color: white; border: none; border-radius: 8px; cursor: pointer; }
+        .btn-checkout { flex: 2; padding: 15px; font-size: 1.2rem; font-weight: bold; background-color: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer; }
+
+        /* --- 管理画面用CSS --- */
+        .admin-pane { width: 100%; padding: 20px; overflow-y: auto; background: #fff; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #f4f4f4; }
+        .btn-delete { background-color: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; }
     </style>
 </head>
 <body>
-    <div class="main-pane">
-        <div><button id="btn-cash" class="active" onclick="setMode('cash')">現金</button> <button id="btn-ticket" onclick="setMode('ticket')">チケット</button></div>
-        <div class="product-grid" id="grid"></div>
-    </div>
-    <div class="side-pane">
-        <h2>注文内容</h2>
-        <div id="cart" style="flex:1"></div>
-        <div id="total-display">0円</div>
-        <button onclick="checkout()" style="background:#28a745; color:white;">会計を確定する</button>
+
+    <!-- ヘッダー (タブ) -->
+    <div class="header">
+        <button class="tab-btn active" onclick="switchTab('pos')">レジ操作</button>
+        <button class="tab-btn" onclick="switchTab('admin')">決済履歴・管理</button>
     </div>
 
+    <!-- レジ画面 -->
+    <div id="tab-pos" class="content-area active">
+        <div class="main-pane">
+            <div class="payment-selector">
+                <button class="pay-btn active" id="btn-cash" onclick="setPaymentMode('cash')">現金</button>
+                <button class="pay-btn" id="btn-ticket" onclick="setPaymentMode('ticket')">ドリンクチケット</button>
+            </div>
+            <div class="product-grid" id="product-grid"></div>
+        </div>
+        <div class="side-pane">
+            <div class="cart-title">注文内容</div>
+            <div class="cart-items" id="cart-items"></div>
+            <div class="checkout-section">
+                <div class="total-display"><span>合計</span><span class="total-amount" id="total-display">0円</span></div>
+                <div class="action-buttons">
+                    <button class="btn-reset" onclick="resetCart()">リセット</button>
+                    <button class="btn-checkout" onclick="checkout()">会計を確定する</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 管理画面 -->
+    <div id="tab-admin" class="content-area">
+        <div class="admin-pane">
+            <h2>決済履歴</h2>
+            <table id="history-table">
+                <thead>
+                    <tr><th>決済ID</th><th>日時</th><th>決済方法</th><th>合計</th><th>内容</th><th>操作</th></tr>
+                </thead>
+                <tbody id="history-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Firebase連携ロジック -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, doc, setDoc, deleteDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        const firebaseConfig = { /* ここに設定を貼り付けてください */ };
-        const db = getFirestore(initializeApp(firebaseConfig));
+        const firebaseConfig = {
+            apiKey: "AIzaSyA6Toofq1A0qDUgJFimU6C0aZuz-L1RuN8",
+            authDomain: "echo-4bc7e.firebaseapp.com",
+            projectId: "echo-4bc7e",
+            storageBucket: "echo-4bc7e.firebasestorage.app",
+            messagingSenderId: "206573954980",
+            appId: "1:206573954980:web:f9d5ab978e12bd83664331",
+            measurementId: "G-7MLE8EGBM7"
+        };
 
-        let mode = 'cash', cart = {};
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // --- タブ切り替え ---
+        window.switchTab = function(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.content-area').forEach(c => c.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('tab-' + tab).classList.add('active');
+        };
+
+        // --- レジ機能 ---
         const products = [
-            {id:'water', name:'お水', p:200}, {id:'tea', name:'お茶', p:200}, {id:'calpis', name:'カルピス', p:200},
-            {id:'calpis_soda', name:'カルピスソーダ', p:200}, {id:'orange', name:'オレンジ', p:200}, {id:'cola', name:'コーラ', p:200},
-            {id:'redbull', name:'レッドブル', p:300}, {id:'redbull_p', name:'RBパープル', p:300}
+            { id: 'water', name: 'お水', cashPrice: 200 }, { id: 'tea', name: 'お茶', cashPrice: 200 },
+            { id: 'calpis', name: 'カルピス', cashPrice: 200 }, { id: 'calpis_soda', name: 'カルピスソーダ', cashPrice: 200 },
+            { id: 'orange', name: 'オレンジジュース', cashPrice: 200 }, { id: 'cola', name: 'コーラ', cashPrice: 200 },
+            { id: 'redbull', name: 'レッドブル', cashPrice: 300 }, { id: 'redbull_purple', name: 'レッドブルパープル', cashPrice: 300 }
         ];
 
-        window.setMode = (m) => { mode = m; document.getElementById('btn-cash').classList.toggle('active', m==='cash'); document.getElementById('btn-ticket').classList.toggle('active', m==='ticket'); render(); };
-        const render = () => {
-            document.getElementById('grid').innerHTML = products.map(p => `<button onclick="add('${p.id}')">${p.name}<br>${mode==='cash'?p.p+'円':'1枚'}</button>`).join('');
+        let currentPaymentMode = 'cash';
+        let cart = {};
+
+        window.setPaymentMode = function(mode) {
+            currentPaymentMode = mode;
+            document.getElementById('btn-cash').classList.toggle('active', mode === 'cash');
+            document.getElementById('btn-ticket').classList.toggle('active', mode === 'ticket');
+            renderProducts();
+            updateCartDisplay();
         };
-        window.add = (id) => { cart[id] = (cart[id] || 0) + 1; update(); };
-        const update = () => {
-            document.getElementById('cart').innerHTML = Object.entries(cart).map(([id, q]) => `<div>${products.find(p=>p.id===id).name} × ${q}</div>`).join('');
-            const total = Object.entries(cart).reduce((s, [id, q]) => s + (mode==='cash' ? products.find(p=>p.id===id).p * q : 0), 0);
-            document.getElementById('total-display').innerText = mode==='cash' ? total+'円' : Object.values(cart).reduce((a,b)=>a+b,0)+'枚';
+
+        function renderProducts() {
+            const grid = document.getElementById('product-grid');
+            grid.innerHTML = '';
+            products.forEach(product => {
+                const priceText = currentPaymentMode === 'cash' ? `${product.cashPrice}円` : 'チケット 1枚';
+                grid.innerHTML += `<button class="product-btn" onclick="addToCart('${product.id}')">
+                    <span class="product-name">${product.name}</span>
+                    <span class="product-price">${priceText}</span>
+                </button>`;
+            });
+        }
+
+        window.addToCart = function(productId) {
+            cart[productId] = (cart[productId] || 0) + 1;
+            updateCartDisplay();
         };
-        window.checkout = async () => {
-            const docRef = await addDoc(collection(db, "sales"), { cart, mode, total: document.getElementById('total-display').innerText, createdAt: serverTimestamp() });
-            await setDoc(doc(db, "state", "current_session"), { cart, mode, status: 'completed' });
-            alert('会計ID: ' + docRef.id); cart = {}; update();
+
+        window.changeQuantity = function(productId, delta) {
+            if (cart[productId] + delta > 0) cart[productId] += delta;
+            else delete cart[productId];
+            updateCartDisplay();
         };
-        render();
+
+        // Firebase経由で客側モニターへ状態を同期
+        async function syncToCustomer(status = 'active', totalText = '0円') {
+            await setDoc(doc(db, "state", "current_session"), {
+                cart: cart,
+                mode: currentPaymentMode,
+                status: status,
+                totalDisplay: totalText
+            });
+        }
+
+        function updateCartDisplay() {
+            const container = document.getElementById('cart-items');
+            if (Object.keys(cart).length === 0) {
+                container.innerHTML = '<div style="text-align:center;color:#aaa;margin-top:20px;">商品が選択されていません</div>';
+                document.getElementById('total-display').innerText = currentPaymentMode === 'cash' ? '0円' : '0枚';
+                syncToCustomer('active', currentPaymentMode === 'cash' ? '0円' : '0枚');
+                return;
+            }
+
+            container.innerHTML = '';
+            let totalSum = 0;
+            let totalCount = 0;
+
+            Object.entries(cart).forEach(([id, count]) => {
+                const product = products.find(p => p.id === id);
+                totalCount += count;
+                const itemPrice = currentPaymentMode === 'cash' ? product.cashPrice * count : count;
+                if (currentPaymentMode === 'cash') totalSum += itemPrice;
+
+                container.innerHTML += `<div class="cart-item">
+                    <span>${product.name} × ${count}</span>
+                    <div>
+                        <span>${currentPaymentMode === 'cash' ? itemPrice+'円' : count+'枚'}</span>
+                        <button class="qty-btn" onclick="changeQuantity('${id}', -1)">-</button>
+                        <button class="qty-btn" onclick="changeQuantity('${id}', 1)">+</button>
+                    </div>
+                </div>`;
+            });
+
+            const totalText = currentPaymentMode === 'cash' ? `${totalSum}円` : `${totalCount}枚`;
+            document.getElementById('total-display').innerText = totalText;
+            syncToCustomer('active', totalText);
+        }
+
+        window.resetCart = function() { cart = {}; updateCartDisplay(); };
+
+        window.checkout = async function() {
+            if (Object.keys(cart).length === 0) return;
+            const totalText = document.getElementById('total-display').innerText;
+            
+            if (confirm(`合計: ${totalText}\n会計を確定しますか？`)) {
+                // 売上保存
+                const docRef = await addDoc(collection(db, "sales"), {
+                    mode: currentPaymentMode,
+                    cart: cart,
+                    totalText: totalText,
+                    createdAt: serverTimestamp()
+                });
+
+                // 客画面に完了表示
+                await syncToCustomer('completed', totalText);
+                alert(`会計完了！\n決済ID: ${docRef.id}`);
+                resetCart();
+            }
+        };
+
+        // --- 管理機能 (リアルタイム履歴) ---
+        onSnapshot(query(collection(db, "sales"), orderBy("createdAt", "desc")), (snapshot) => {
+            const tbody = document.getElementById('history-body');
+            tbody.innerHTML = '';
+            snapshot.forEach((docSnap) => {
+                const data = docSnap.data();
+                const date = data.createdAt ? data.createdAt.toDate().toLocaleString() : '送信中...';
+                const itemsStr = Object.entries(data.cart).map(([id, q]) => `${products.find(p=>p.id===id).name}×${q}`).join(', ');
+                
+                tbody.innerHTML += `<tr>
+                    <td>${docSnap.id}</td>
+                    <td>${date}</td>
+                    <td>${data.mode === 'cash' ? '現金' : 'チケット'}</td>
+                    <td><b>${data.totalText}</b></td>
+                    <td>${itemsStr}</td>
+                    <td><button class="btn-delete" onclick="deleteSale('${docSnap.id}')">取消</button></td>
+                </tr>`;
+            });
+        });
+
+        window.deleteSale = async function(id) {
+            if (confirm("この決済履歴を取り消しますか？")) {
+                await deleteDoc(doc(db, "sales", id));
+            }
+        };
+
+        // 初期化
+        renderProducts();
+        updateCartDisplay();
     </script>
 </body>
 </html>
