@@ -1901,20 +1901,12 @@
     // ==========================================================================
     // [PLATFORM EXTERNAL ACTIONS] 稼働状況に応じた外部・動的遷移処理
     // ==========================================================================
-    function showPlatformDetail(platformName, statusKey) {
-      try {
-        if (statusKey === 'INSTAGRAM_LP') {
-          showToast("Light PurpleのInstagramを開きます...");
-          setTimeout(() => { window.open('https://www.instagram.com/c102_lightpurple/', '_blank'); }, 600);
-          return;
-        }
-        if (statusKey === 'INSTAGRAM_TWINKLE') {
-          showToast("TwinkleのInstagramを開きます...");
-          setTimeout(() => { window.open('https://www.instagram.com/twinkle_agu/', '_blank'); }, 600);
-          return;
-        }
-      } catch (e) {
-        console.error("External navigation trigger error:", e);
+    function showPlatformDetail(title, url) {
+      if (url && url.startsWith('http')) {
+        showToast(`${title} のInstagramを開きます`);
+        window.open(url, '_blank');
+      } else {
+        showToast(`${title} の詳細情報を読み込んでいます...`);
       }
     }
     
