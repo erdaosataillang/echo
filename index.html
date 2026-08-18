@@ -159,15 +159,15 @@
             <div class="grid-menu-icon"><i data-lucide="coffee" class="w-5 h-5"></i></div>
             <span class="text-[10px] font-bold text-gray-700 mt-2 text-center leading-tight">ドリンク</span>
           </button>
-          <!-- チェックイン -->
+          <!-- QRコードを読み取り -->
+          <button onclick="openFullscreen('qrcode')" class="grid-menu-item">
+            <div class="grid-menu-icon"><i data-lucide="qr-code" class="w-5 h-5"></i></div>
+            <span class="text-[10px] font-bold text-gray-700 mt-2 text-center leading-tight">QRコード<br>を読み取り</span>
+          </button>
+          <!-- チケット -->
           <button onclick="executeCheckIn()" class="grid-menu-item">
             <div class="grid-menu-icon"><i data-lucide="ticket" class="w-5 h-5"></i></div>
-            <span class="text-[10px] font-bold text-gray-700 mt-2 text-center leading-tight">チェック<br>イン</span>
-          </button>
-          <!-- プレイリスト -->
-          <button onclick="openFullscreen('playlist')" class="grid-menu-item">
-            <div class="grid-menu-icon"><i data-lucide="music" class="w-5 h-5"></i></div>
-            <span class="text-[10px] font-bold text-gray-700 mt-2 text-center leading-tight">プレイリスト作成</span>
+            <span class="text-[10px] font-bold text-gray-700 mt-2 text-center leading-tight">チケット</span>
           </button>
           <!-- FAQ -->
           <button onclick="openFullscreen('faq')" class="grid-menu-item">
@@ -444,21 +444,22 @@
             </div>
           </div>
 
-          <!-- [PLAYLIST] -->
-          <div id="full-content-playlist" class="full-subcontent hidden">
-            <p class="text-xs text-gray-500 mb-4">マイバンド（ハートボタン）に登録したアーティストを解析し、体験型スマートプレイリストを自動構成します。</p>
-            <div class="bg-yellow-50 rounded-2xl p-4 border border-yellow-100 mb-5">
-              <div class="text-xs font-bold text-yellow-800 mb-1 flex items-center gap-1.5">
-                <i data-lucide="info" class="w-3.5 h-3.5"></i>
-                マッチング情報
+          <!-- [QR CODE] -->
+          <div id="full-content-qrcode" class="full-subcontent hidden">
+            <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm text-center max-w-sm mx-auto space-y-4">
+              <div class="w-16 h-16 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 mx-auto border border-indigo-100">
+                <i data-lucide="qr-code" class="w-8 h-8"></i>
               </div>
-              <p class="text-xs text-yellow-700 leading-relaxed">マイバンド登録されたアーティストのジャンル、出演順から快適な試聴プレイリストを作成します。</p>
+              <div>
+                <h3 class="text-sm font-black text-gray-900">受付・入場用QRコード</h3>
+                <p class="text-xs text-gray-500 mt-1">入場時やドリンク交換時にスタッフへご提示ください。</p>
+              </div>
+              <!-- QRコード仮置きプレースホルダー画像 -->
+              <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 inline-block">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=ECHO-LIVE-TICKET-2026" alt="QR Code" class="w-44 h-44 mx-auto rounded-lg">
+              </div>
+              <p class="text-[10px] text-gray-400 font-bold">Ticket ID: ECHO-98-TICKET</p>
             </div>
-            <button onclick="generatePlaylistMock()" class="w-full py-4 bg-gray-900 hover:bg-gray-800 text-white rounded-2xl text-xs font-black active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-md">
-              <i data-lucide="sparkles" class="w-4 h-4 text-yellow-400"></i>
-              <span>プレイリストを自動生成する</span>
-            </button>
-            <div id="playlist-result" class="mt-5 space-y-2 hidden"></div>
           </div>
 
          <!-- [FAQ] -->
@@ -779,7 +780,7 @@
       "info": "インフォメーション",
       "schedule": "今後の予定",
       "rank": "ランク・特典",
-      "playlist": "プレイリストジェネレータ",
+      "qrcode": "QRコード読み取り",
       "faq": "よくある質問",
       "others": "OTHERS",
       "notifications": "通知一覧",
