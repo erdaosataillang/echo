@@ -478,11 +478,21 @@
                 <p class="text-xs text-gray-500 mt-0.5">会計レジに表示されたQRコードをカメラにかざしてください。</p>
               </div>
 
-              <!-- カメラプレビュー表示エリア -->
-              <div class="relative w-full aspect-square bg-black rounded-2xl overflow-hidden border border-gray-200 shadow-inner flex items-center justify-center">
-                <div id="qr-reader" class="w-full h-full"></div>
+              <!-- カメラプレビュー表示エリア (未起動時はタップで起動) -->
+              <div id="qr-viewfinder-box" onclick="startQrScanner()" class="relative w-full aspect-square bg-black rounded-2xl overflow-hidden border border-gray-200 shadow-inner flex items-center justify-center cursor-pointer group">
+                <div id="qr-reader" class="w-full h-full pointer-events-none"></div>
+                
+                <!-- 未起動時のプレースホルダーオーバーレイ -->
+                <div id="qr-placeholder-overlay" class="absolute inset-0 bg-gray-950/80 backdrop-blur-xs flex flex-col items-center justify-center p-4 text-center group-hover:bg-gray-950/75 transition-colors">
+                  <div class="w-14 h-14 rounded-full bg-purple-600 text-white flex items-center justify-center shadow-lg mb-2 group-hover:scale-105 transition-transform">
+                    <i data-lucide="camera" class="w-7 h-7"></i>
+                  </div>
+                  <span class="text-xs font-black text-white">ここをタップしてカメラを起動</span>
+                  <span class="text-[9px] text-gray-400 mt-1">レジのQRコードを読み取ります</span>
+                </div>
+
                 <!-- スキャンガイドフレーム -->
-                <div class="absolute inset-8 border-2 border-dashed border-white/50 rounded-xl pointer-events-none flex items-center justify-center">
+                <div class="absolute inset-8 border-2 border-dashed border-white/50 rounded-xl pointer-events-none flex items-center justify-center hidden" id="scan-guide-frame">
                   <span class="text-[10px] font-bold text-white/70 bg-black/40 px-2 py-1 rounded">ここにQRを合わせる</span>
                 </div>
               </div>
@@ -499,7 +509,7 @@
                 </button>
               </div>
 
-              <!-- 手動入力フォールバック (コード直接貼り付け) -->
+              <!-- 手動入力フォールバック -->
               <div class="pt-2 border-t border-gray-100 text-left space-y-2">
                 <label class="block text-[10px] font-black text-gray-400 uppercase">またはリンク/IDを手動入力</label>
                 <div class="flex gap-2">
@@ -2063,6 +2073,11 @@
           return;
         }
 
+        const overlayEl = document.getElementById('qr-placeholder-overlay');
+        const guideEl = document.getElementById('scan-guide-frame');
+        if (overlayEl) overlayEl.classList.add('hidden');
+        if (guideEl) guideEl.classList.remove('hidden');
+
         if (!html5QrCode) {
           html5QrCode = new Html5Qrcode("qr-reader");
         }
@@ -2073,16 +2088,16 @@
           { facingMode: "environment" }, 
           config, 
           (decodedText) => {
-            // QRコード読取成功時のコールバック
+            // スキャン成功
             stopQrScanner();
             document.getElementById('drink-id-input').value = decodedText;
             window.fetchAndApplyDrinkStamp(decodedText);
           },
-          (errorMessage) => {
-            // スキャン中（通常エラーは無視して継続）
-          }
+          (errorMessage) => {}
         ).catch(err => {
           console.error("Camera start error:", err);
+          if (overlayEl) overlayEl.classList.remove('hidden');
+          if (guideEl) guideEl.classList.add('hidden');
           showToast("カメラの起動に失敗しました。権限をご確認ください。");
         });
 
@@ -2095,6 +2110,11 @@
 
     window.stopQrScanner = function() {
       try {
+        const overlayEl = document.getElementById('qr-placeholder-overlay');
+        const guideEl = document.getElementById('scan-guide-frame');
+        if (overlayEl) overlayEl.classList.remove('hidden');
+        if (guideEl) guideEl.classList.add('hidden');
+
         if (html5QrCode && html5QrCode.isScanning) {
           html5QrCode.stop().then(() => {
             showToast("カメラを停止しました");
@@ -2153,7 +2173,6 @@
         updateStampUI();
         showToast("スタンプを獲得しました！");
         document.getElementById('drink-id-input').value = '';
-        closeFullscreen();
 
       } catch (e) {
         console.error("Error verifying sale:", e);
@@ -2162,7 +2181,6 @@
         localStorage.setItem('echo_stamps', userStampsCount);
         updateStampUI();
         showToast("スタンプを獲得しました！（シミュレーション）");
-        closeFullscreen();
       }
     };
 
