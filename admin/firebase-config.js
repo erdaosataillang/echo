@@ -3,8 +3,11 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/fireba
 import { 
   getFirestore, 
   collection, 
+  doc,
   getDocs, 
   addDoc, 
+  updateDoc,
+  deleteDoc,
   onSnapshot, 
   query, 
   orderBy, 
@@ -21,15 +24,16 @@ const firebaseConfig = {
   measurementId: "G-7MLE8EGBM7"
 };
 
-// 初期化
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 
-// 他のファイルで使う関数をまとめてエクスポート
 export {
   collection,
+  doc,
   getDocs,
   addDoc,
+  updateDoc,
+  deleteDoc,
   onSnapshot,
   query,
   orderBy,
