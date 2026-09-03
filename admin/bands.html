@@ -20,34 +20,36 @@
     <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8">
       <div>
         <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">バンド管理</h1>
-        <p class="text-xs text-slate-400 mt-0.5 sm:mt-1">参加バンドと出演メンバーの登録・確認</p>
+        <p class="text-xs text-slate-400 mt-0.5 sm:mt-1">登録バンドの出演管理・編集（ID管理）</p>
       </div>
-      <button id="open-modal-btn" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-2xl shadow-sm transition self-start sm:self-auto">
+      <button id="open-create-modal-btn" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-2xl shadow-sm transition self-start sm:self-auto">
         <i data-lucide="plus" class="w-4 h-4"></i>
         バンド新規登録
       </button>
     </header>
 
-    <!-- バンド一覧カード / テーブル -->
+    <!-- バンド一覧 -->
     <div class="bg-white rounded-3xl border border-slate-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.02)] overflow-hidden">
       <div class="p-5 border-b border-slate-100 flex items-center justify-between">
         <span class="text-sm font-bold text-slate-800">登録バンド一覧</span>
         <span id="band-count" class="text-xs text-slate-400 font-medium">合計 0 件</span>
       </div>
 
-      <!-- PC・タブレット向けテーブル -->
+      <!-- PC向けテーブル -->
       <div class="overflow-x-auto hidden md:block">
         <table class="w-full text-left text-sm text-slate-600">
           <thead class="bg-slate-50/60 text-xs text-slate-400 uppercase tracking-wider border-b border-slate-100">
             <tr>
-              <th class="px-6 py-4 w-1/4">バンド名</th>
-              <th class="px-6 py-4 w-1/4">大学・団体名</th>
+              <th class="px-6 py-4 w-36">バンドID</th>
+              <th class="px-6 py-4">バンド名</th>
+              <th class="px-6 py-4">大学・団体</th>
               <th class="px-6 py-4">メンバー構成 (パート・名前)</th>
+              <th class="px-6 py-4 text-right w-24">操作</th>
             </tr>
           </thead>
           <tbody id="band-table-body" class="divide-y divide-slate-100">
             <tr>
-              <td colspan="3" class="text-center py-10 text-slate-400 text-sm">読み込み中...</td>
+              <td colspan="5" class="text-center py-10 text-slate-400 text-sm">読み込み中...</td>
             </tr>
           </tbody>
         </table>
@@ -60,24 +62,30 @@
     </div>
   </main>
 
-  <!-- 新規登録モーダル -->
+  <!-- 新規登録＆編集兼用モーダル -->
   <div id="modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl max-h-[90vh] flex flex-col">
       <div class="flex justify-between items-center mb-5 shrink-0">
-        <h3 class="text-lg font-bold text-slate-800">バンド新規登録</h3>
+        <div>
+          <h3 id="modal-title" class="text-lg font-bold text-slate-800">バンド新規登録</h3>
+          <p id="modal-band-id-display" class="text-xs font-mono text-slate-400 mt-0.5 hidden"></p>
+        </div>
         <button id="close-modal-btn" class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 transition">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
-      <form id="add-band-form" class="space-y-4 overflow-y-auto pr-1 flex-1">
+      <form id="band-form" class="space-y-4 overflow-y-auto pr-1 flex-1">
+        <!-- 編集時用のバンドID保持フィールド（非表示） -->
+        <input type="hidden" id="edit-band-id" value="">
+
         <!-- バンド名 -->
         <div>
           <label class="block text-xs font-semibold text-slate-500 mb-1.5">バンド名 <span class="text-rose-500">*</span></label>
           <input type="text" id="band-name" required placeholder="例: The Neon Lights" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-800">
         </div>
 
-        <!-- 大学名（プルダウン式） -->
+        <!-- 大学名（プルダウン） -->
         <div>
           <label class="block text-xs font-semibold text-slate-500 mb-1.5">大学名 <span class="text-rose-500">*</span></label>
           <select id="band-university" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-800">
@@ -89,7 +97,7 @@
           </select>
         </div>
 
-        <!-- パートと名前（複数追加可能） -->
+        <!-- パートと名前 -->
         <div>
           <div class="flex items-center justify-between mb-1.5">
             <label class="block text-xs font-semibold text-slate-500">メンバー (パート & 名前) <span class="text-rose-500">*</span></label>
@@ -98,15 +106,20 @@
               メンバー追加
             </button>
           </div>
-
-          <div id="members-container" class="space-y-2">
-            <!-- JSで動的に追加されます -->
-          </div>
+          <div id="members-container" class="space-y-2"></div>
         </div>
 
+        <!-- ボタン領域 -->
         <div class="pt-4 flex gap-3 shrink-0">
-          <button type="button" id="cancel-btn" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-sm font-semibold transition">キャンセル</button>
-          <button type="submit" id="submit-btn" class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition">登録する</button>
+          <button type="button" id="delete-btn" class="hidden px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl text-sm font-semibold transition">
+            削除
+          </button>
+          <button type="button" id="cancel-btn" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-sm font-semibold transition">
+            キャンセル
+          </button>
+          <button type="submit" id="submit-btn" class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition">
+            保存する
+          </button>
         </div>
       </form>
     </div>
@@ -116,41 +129,82 @@
 
   <!-- Firestore連携スクリプト -->
   <script type="module">
-    import { db, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from './firebase-config.js';
+    import { db, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, serverTimestamp } from './firebase-config.js';
+
+    // ローカルキャッシュ用（IDから即座にデータを取得するため）
+    let bandsCache = new Map();
 
     const modal = document.getElementById('modal');
-    const openModalBtn = document.getElementById('open-modal-btn');
+    const modalTitle = document.getElementById('modal-title');
+    const modalBandIdDisplay = document.getElementById('modal-band-id-display');
+    const openCreateModalBtn = document.getElementById('open-create-modal-btn');
     const closeModalBtn = document.getElementById('close-modal-btn');
     const cancelBtn = document.getElementById('cancel-btn');
-    const form = document.getElementById('add-band-form');
+    const deleteBtn = document.getElementById('delete-btn');
+    const form = document.getElementById('band-form');
+    const editBandIdInput = document.getElementById('edit-band-id');
     const membersContainer = document.getElementById('members-container');
     const addMemberRowBtn = document.getElementById('add-member-row-btn');
 
-    // モーダル開閉制御
-    const toggleModal = (show) => {
-      modal.classList.toggle('hidden', !show);
-      if (show) {
-        if (membersContainer.children.length === 0) {
-          addMemberRow('Vo.', '');
-          addMemberRow('Gt.', '');
-          addMemberRow('Ba.', '');
-          addMemberRow('Dr.', '');
-        }
-      }
+    // モーダル開閉
+    function openModalForCreate() {
+      editBandIdInput.value = '';
+      modalTitle.textContent = 'バンド新規登録';
+      modalBandIdDisplay.classList.add('hidden');
+      deleteBtn.classList.add('hidden');
+      form.reset();
+      membersContainer.innerHTML = '';
+      
+      // デフォルト行の追加
+      addMemberRow('Vo.', '');
+      addMemberRow('Gt.', '');
+      addMemberRow('Ba.', '');
+      addMemberRow('Dr.', '');
+      
+      modal.classList.remove('hidden');
       if (window.lucide) window.lucide.createIcons();
-    };
+    }
 
-    openModalBtn.addEventListener('click', () => toggleModal(true));
-    closeModalBtn.addEventListener('click', () => toggleModal(false));
-    cancelBtn.addEventListener('click', () => toggleModal(false));
+    function openModalForEdit(bandId) {
+      const data = bandsCache.get(bandId);
+      if (!data) return;
 
-    // メンバー入力行追加
-    function addMemberRow(defaultPart = 'Gt.', defaultName = '') {
+      editBandIdInput.value = bandId;
+      modalTitle.textContent = 'バンド情報の編集';
+      modalBandIdDisplay.textContent = `ID: ${bandId}`;
+      modalBandIdDisplay.classList.remove('hidden');
+      deleteBtn.classList.remove('hidden');
+
+      document.getElementById('band-name').value = data.name || '';
+      document.getElementById('band-university').value = data.university || '';
+
+      membersContainer.innerHTML = '';
+      const members = data.members || [];
+      if (members.length > 0) {
+        members.forEach(m => addMemberRow(m.part, m.name));
+      } else {
+        addMemberRow('Vo.', '');
+      }
+
+      modal.classList.remove('hidden');
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    function closeModal() {
+      modal.classList.add('hidden');
+    }
+
+    openCreateModalBtn.addEventListener('click', openCreateModalBtn => openModalForCreate());
+    closeModalBtn.addEventListener('click', closeModal);
+    cancelBtn.addEventListener('click', closeModal);
+
+    // メンバー行の生成
+    function addMemberRow(part = '', name = '') {
       const row = document.createElement('div');
       row.className = 'flex items-center gap-2 member-row';
       row.innerHTML = `
-        <input type="text" placeholder="パート (例: Vo. / Gt.)" value="${defaultPart}" class="w-1/3 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 member-part">
-        <input type="text" placeholder="名前 (例: 山田太郎)" value="${defaultName}" required class="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 member-name">
+        <input type="text" placeholder="パート" value="${part}" class="w-1/3 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 member-part">
+        <input type="text" placeholder="名前" value="${name}" required class="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 member-name">
         <button type="button" class="p-2 text-slate-400 hover:text-rose-500 transition remove-row-btn" title="削除">
           <i data-lucide="trash-2" class="w-4 h-4"></i>
         </button>
@@ -170,48 +224,70 @@
 
     addMemberRowBtn.addEventListener('click', () => addMemberRow('', ''));
 
-    // バンド登録送信処理
+    // 保存処理（新規登録 or 更新）
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const submitBtn = document.getElementById('submit-btn');
       submitBtn.disabled = true;
-      submitBtn.textContent = '登録中...';
+      submitBtn.textContent = '保存中...';
 
+      const bandId = editBandIdInput.value;
       const memberRows = membersContainer.querySelectorAll('.member-row');
       const members = [];
       memberRows.forEach(row => {
         const part = row.querySelector('.member-part').value.trim() || 'Member';
         const name = row.querySelector('.member-name').value.trim();
-        if (name) {
-          members.push({ part, name });
-        }
+        if (name) members.push({ part, name });
       });
 
-      try {
-        await addDoc(collection(db, 'bands'), {
-          name: document.getElementById('band-name').value.trim(),
-          university: document.getElementById('band-university').value,
-          members: members,
-          memberCount: members.length,
-          createdAt: serverTimestamp()
-        });
+      const payload = {
+        name: document.getElementById('band-name').value.trim(),
+        university: document.getElementById('band-university').value,
+        members: members,
+        memberCount: members.length,
+        updatedAt: serverTimestamp()
+      };
 
-        form.reset();
-        membersContainer.innerHTML = '';
-        toggleModal(false);
+      try {
+        if (bandId) {
+          // IDに基づく更新処理
+          await updateDoc(doc(db, 'bands', bandId), payload);
+        } else {
+          // 新規登録
+          payload.createdAt = serverTimestamp();
+          await addDoc(collection(db, 'bands'), payload);
+        }
+        closeModal();
       } catch (err) {
-        console.error("Error adding band: ", err);
-        alert('登録に失敗しました。Firestoreの設定を確認してください。');
+        console.error("Firestore save error: ", err);
+        alert('保存に失敗しました。');
       } finally {
         submitBtn.disabled = false;
-        submitBtn.textContent = '登録する';
+        submitBtn.textContent = '保存する';
       }
     });
 
-    // リアルタイム一覧取得・表示
+    // 削除処理
+    deleteBtn.addEventListener('click', async () => {
+      const bandId = editBandIdInput.value;
+      if (!bandId) return;
+
+      if (confirm('このバンドを削除してもよろしいですか？この操作は取り消せません。')) {
+        try {
+          await deleteDoc(doc(db, 'bands', bandId));
+          closeModal();
+        } catch (err) {
+          console.error("Delete error: ", err);
+          alert('削除に失敗しました。');
+        }
+      }
+    });
+
+    // リアルタイム一覧同期
     const q = query(collection(db, 'bands'), orderBy('createdAt', 'desc'));
 
     onSnapshot(q, (snapshot) => {
+      bandsCache.clear();
       const tableBody = document.getElementById('band-table-body');
       const cardList = document.getElementById('band-card-list');
       const countLabel = document.getElementById('band-count');
@@ -219,7 +295,7 @@
       countLabel.textContent = `合計 ${snapshot.size} 件`;
 
       if (snapshot.empty) {
-        tableBody.innerHTML = `<tr><td colspan="3" class="text-center py-10 text-slate-400 text-sm">登録されたバンドがありません。「バンド新規登録」から追加してください。</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-slate-400 text-sm">登録されたバンドがありません。</td></tr>`;
         cardList.innerHTML = `<div class="p-6 text-center text-slate-400 text-sm">登録されたバンドがありません。</div>`;
         return;
       }
@@ -227,12 +303,14 @@
       let tableHtml = '';
       let cardHtml = '';
 
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        const members = data.members || [];
+      snapshot.forEach((docSnap) => {
+        const bandId = docSnap.id;
+        const data = docSnap.data();
+        bandsCache.set(bandId, data);
 
+        const members = data.members || [];
         const memberTagsHtml = members.map(m => `
-          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg text-xs font-medium">
+          <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg text-xs font-medium">
             <span class="font-bold text-blue-600">${m.part}</span>
             <span>${m.name}</span>
           </span>
@@ -241,8 +319,13 @@
         // PCテーブル
         tableHtml += `
           <tr class="hover:bg-slate-50/50 transition align-top">
+            <td class="px-6 py-4">
+              <span class="font-mono text-xs bg-slate-100 text-slate-500 px-2 py-1 rounded-md tracking-wider border border-slate-200/50">
+                ${bandId.slice(0, 7)}...
+              </span>
+            </td>
             <td class="px-6 py-4 font-bold text-slate-800">${data.name}</td>
-            <td class="px-6 py-4 text-slate-600">
+            <td class="px-6 py-4">
               <span class="inline-block px-2.5 py-1 bg-slate-50 text-slate-600 border border-slate-200/60 rounded-lg text-xs font-medium">
                 ${data.university || '-'}
               </span>
@@ -252,19 +335,28 @@
                 ${memberTagsHtml || '<span class="text-xs text-slate-400">未登録</span>'}
               </div>
             </td>
+            <td class="px-6 py-4 text-right">
+              <button data-id="${bandId}" class="edit-btn p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition" title="編集">
+                <i data-lucide="edit-3" class="w-4 h-4"></i>
+              </button>
+            </td>
           </tr>
         `;
 
         // スマホカード
         cardHtml += `
           <div class="p-5 space-y-3">
-            <div>
-              <div class="flex justify-between items-start gap-2 mb-1">
-                <h4 class="font-bold text-slate-800 text-base">${data.name}</h4>
-                <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[11px] font-medium shrink-0">
-                  ${data.university || '大学未設定'}
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="font-mono text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded tracking-wider">
+                  ID: ${bandId.slice(0, 6)}
                 </span>
+                <h4 class="font-bold text-slate-800 text-base mt-1">${data.name}</h4>
+                <p class="text-xs text-slate-500 font-medium">${data.university || '-'}</p>
               </div>
+              <button data-id="${bandId}" class="edit-btn p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition">
+                <i data-lucide="edit-3" class="w-4 h-4"></i>
+              </button>
             </div>
             <div class="flex flex-wrap gap-1.5">
               ${memberTagsHtml || '<span class="text-xs text-slate-400">未登録</span>'}
@@ -275,6 +367,15 @@
 
       tableBody.innerHTML = tableHtml;
       cardList.innerHTML = cardHtml;
+
+      // 編集ボタンのイベントバインド
+      document.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-id');
+          openModalForEdit(id);
+        });
+      });
+
       if (window.lucide) window.lucide.createIcons();
     });
   </script>
