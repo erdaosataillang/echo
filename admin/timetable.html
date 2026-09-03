@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>タイムテーブル</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap');
+    body { font-family: 'Inter', 'Noto Sans JP', sans-serif; }
+  </style>
+</head>
+<body class="bg-[#F8FAFC] text-slate-700 min-h-screen flex flex-col md:flex-row antialiased">
+
+  <div id="layout-container" class="contents"></div>
+
+  <main class="flex-1 p-5 sm:p-8 md:p-10 overflow-y-auto">
+    <!-- ヘッダー -->
+    <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8">
+      <div>
+        <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">タイムテーブル</h1>
+        <p class="text-xs text-slate-400 mt-0.5 sm:mt-1">出演順とスケジュールの管理・リアルタイム進行</p>
+      </div>
+      <button id="open-create-modal-btn" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-2xl shadow-sm transition self-start sm:self-auto">
+        <i data-lucide="plus" class="w-4 h-4"></i>
+        出演枠を追加
+      </button>
+    </header>
+
+    <!-- 日程切り替えタブ (Day 1 / Day 2) -->
+    <div class="flex items-center gap-2 mb-6 bg-slate-200/60 p-1 rounded-2xl w-fit">
+      <button id="tab-day1" class="day-tab px-6 py-2 rounded-xl text-sm font-bold transition bg-white text-blue-600 shadow-sm">
+        1日目 (Day 1)
+      </button>
+      <button id="tab-day2" class="day-tab px-6 py-2 rounded-xl text-sm font-medium transition text-slate-500 hover:text-slate-800">
+        2日目 (Day 2)
+      </button>
+    </div>
+
+    <!-- タイムテーブル本体表示エリア -->
+    <div class="bg-white rounded-3xl border border-slate-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.02)] p-6 sm:p-8">
+      <div class="flex justify-between items-center mb-6 pb-4 border-b border-slate-100">
+        <div>
+          <h2 id="current-day-heading" class="text-lg font-bold text-slate-800">1日目 スケジュール</h2>
+          <p class="text-xs text-slate-400">開始時間順に自動整列されます</p>
+        </div>
+        <span id="slot-count" class="text-xs text-slate-400 font-semibold px-3 py-1 bg-slate-50 rounded-full">
+          合計 0 枠
+        </span>
+      </div>
+
+      <!-- タイムラインコンテナ -->
+      <div id="timeline-list" class="space-y-4">
+        <div class="text-center py-12 text-slate-400 text-sm">読み込み中...</div>
+      </div>
+    </div>
+  </main>
+
+  <!-- タイムテーブル枠 追加・編集モーダル -->
+  <div id="modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl">
+      <div class="flex justify-between items-center mb-5">
+        <h3 id="modal-title" class="text-lg font-bold text-slate-800">出演枠の追加</h3>
+        <button id="close-modal-btn" class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="slot-form" class="space-y-4">
+        <input type="hidden" id="edit-slot-id" value="">
+
+        <!-- 日程選択 -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 mb-1.5">出演日 <span class="text-rose-500">*</span></label>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="flex items-center justify-center gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer text-sm font-semibold has-[:checked]:bg-blue-50 has-[:checked]:border-blue-500 has-[:checked]:text-blue-600 transition">
+              <input type="radio" name="slot-day" value="day1" checked class="hidden">
+              1日目 (Day 1)
+            </label>
+            <label class="flex items-center justify-center gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer text-sm font-semibold has-[:checked]:bg-blue-50 has-[:checked]:border-blue-500 has-[:checked]:text-blue-600 transition">
+              <input type="radio" name="slot-day" value="day2" class="hidden">
+              2日目 (Day 2)
+            </label>
+          </div>
+        </div>
+
+        <!-- バンド選択（Firestoreから取得してプルダウン生成） -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 mb-1.5">出演バンド <span class="text-rose-500">*</span></label>
+          <select id="slot-band-id" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-800">
+            <option value="" disabled selected>バンドを選択してください</option>
+          </select>
+        </div>
+
+        <!-- 時間選択 (開始〜終了) -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1.5">開始時刻 <span class="text-rose-500">*</span></label>
+            <input type="time" id="slot-start-time" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-800 font-mono">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1.5">終了時刻 <span class="text-rose-500">*</span></label>
+            <input type="time" id="slot-end-time" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-800 font-mono">
+          </div>
+        </div>
+
+        <!-- 備考・転換メモ (任意) -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 mb-1.5">備考 (リハ・転換など)</label>
+          <input type="text" id="slot-note" placeholder="例: 転換10分 / ゲスト演奏" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-800">
+        </div>
+
+        <!-- ボタン -->
+        <div class="pt-4 flex gap-3">
+          <button type="button" id="delete-slot-btn" class="hidden px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl text-sm font-semibold transition">
+            削除
+          </button>
+          <button type="button" id="cancel-btn" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-sm font-semibold transition">
+            キャンセル
+          </button>
+          <button type="submit" id="submit-btn" class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition">
+            保存する
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="layout.js"></script>
+
+  <!-- タイムテーブル処理スクリプト -->
+  <script type="module">
+    import { db, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, serverTimestamp } from './firebase-config.js';
+
+    // 団体カラー定義
+    const UNIVERSITY_COLORS = {
+      '愛知学院大学': '#C97DE6',
+      '名古屋商科大学 軽音学部': '#61C253',
+      '中京大学 サウンドコミュニケーション': '#C25361',
+      '愛知教育大学 軽音学部': '#5399C2'
+    };
+
+    function getUnivColor(name) {
+      return UNIVERSITY_COLORS[name] || '#64748B';
+    }
+
+    let activeDay = 'day1'; // 現在表示中の日程
+    let bandsMap = new Map(); // bandId -> bandData
+    let slotsCache = new Map(); // slotId -> slotData
+
+    // DOM要素
+    const tabDay1 = document.getElementById('tab-day1');
+    const tabDay2 = document.getElementById('tab-day2');
+    const heading = document.getElementById('current-day-heading');
+    const timelineList = document.getElementById('timeline-list');
+    const slotCountLabel = document.getElementById('slot-count');
+
+    const modal = document.getElementById('modal');
+    const modalTitle = document.getElementById('modal-title');
+    const slotForm = document.getElementById('slot-form');
+    const editSlotIdInput = document.getElementById('edit-slot-id');
+    const selectBand = document.getElementById('slot-band-id');
+    const deleteSlotBtn = document.getElementById('delete-slot-btn');
+    const openCreateModalBtn = document.getElementById('open-create-modal-btn');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+    const cancelBtn = document.getElementById('cancel-btn');
+
+    // 1. バンド一覧をリアルタイム同期（セレクトボックス生成用）
+    onSnapshot(collection(db, 'bands'), (snapshot) => {
+      bandsMap.clear();
+      selectBand.innerHTML = '<option value="" disabled selected>バンドを選択してください</option>';
+
+      snapshot.forEach(docSnap => {
+        const id = docSnap.id;
+        const data = docSnap.data();
+        bandsMap.set(id, data);
+
+        const opt = document.createElement('option');
+        opt.value = id;
+        opt.textContent = `${data.name} (${data.university || '大学未設定'})`;
+        selectBand.appendChild(opt);
+      });
+
+      // バンド情報が更新されたらタイムラインの表示も再描画
+      renderTimeline();
+    });
+
+    // 2. 日程タブの切り替え
+    tabDay1.addEventListener('click', () => switchDay('day1'));
+    tabDay2.addEventListener('click', () => switchDay('day2'));
+
+    function switchDay(day) {
+      activeDay = day;
+      if (day === 'day1') {
+        tabDay1.className = 'day-tab px-6 py-2 rounded-xl text-sm font-bold transition bg-white text-blue-600 shadow-sm';
+        tabDay2.className = 'day-tab px-6 py-2 rounded-xl text-sm font-medium transition text-slate-500 hover:text-slate-800';
+        heading.textContent = '1日目 スケジュール';
+      } else {
+        tabDay2.className = 'day-tab px-6 py-2 rounded-xl text-sm font-bold transition bg-white text-blue-600 shadow-sm';
+        tabDay1.className = 'day-tab px-6 py-2 rounded-xl text-sm font-medium transition text-slate-500 hover:text-slate-800';
+        heading.textContent = '2日目 スケジュール';
+      }
+      renderTimeline();
+    }
+
+    // 3. タイムテーブル枠のリアルタイム同期
+    const q = query(collection(db, 'timetable'), orderBy('startTime', 'asc'));
+
+    onSnapshot(q, (snapshot) => {
+      slotsCache.clear();
+      snapshot.forEach(docSnap => {
+        slotsCache.set(docSnap.id, docSnap.data());
+      });
+      renderTimeline();
+    });
+
+    // 4. タイムライン描画処理
+    function renderTimeline() {
+      // 現在選択中の日程（day1 / day2）のみ抽出
+      const filteredSlots = [];
+      slotsCache.forEach((data, id) => {
+        if (data.day === activeDay) {
+          filteredSlots.push({ id, ...data });
+        }
+      });
+
+      // 開始時間順にソート
+      filteredSlots.sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
+
+      slotCountLabel.textContent = `合計 ${filteredSlots.length} 枠`;
+
+      if (filteredSlots.length === 0) {
+        timelineList.innerHTML = `
+          <div class="text-center py-16 text-slate-400">
+            <i data-lucide="calendar-x" class="w-10 h-10 mx-auto mb-3 stroke-[1.5] text-slate-300"></i>
+            <p class="text-sm">出演枠がまだ登録されていません。「出演枠を追加」から登録してください。</p>
+          </div>
+        `;
+        if (window.lucide) window.lucide.createIcons();
+        return;
+      }
+
+      let html = '';
+      filteredSlots.forEach((slot, index) => {
+        const band = bandsMap.get(slot.bandId) || { name: '（削除されたバンド）', university: '-', members: [] };
+        const univColor = getUnivColor(band.university);
+        const members = band.members || [];
+        const memberTagsHtml = members.map(m => `
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md text-[11px] font-medium">
+            <span class="font-bold text-blue-600">${m.part}</span>
+            <span>${m.name}</span>
+          </span>
+        `).join('');
+
+        const cueBadgeHtml = band.cueSheetUrl ? `
+          <a href="${band.cueSheetUrl}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-xs font-semibold transition">
+            <i data-lucide="image" class="w-3.5 h-3.5"></i>
+            <span>Cueシート</span>
+          </a>
+        ` : '';
+
+        // 枠の所要時間計算 (HH:mm 〜 HH:mm)
+        let durationText = '';
+        if (slot.startTime && slot.endTime) {
+          const [sh, sm] = slot.startTime.split(':').map(Number);
+          const [eh, em] = slot.endTime.split(':').map(Number);
+          const diffMin = (eh * 60 + em) - (sh * 60 + sm);
+          if (diffMin > 0) durationText = `(${diffMin}分)`;
+        }
+
+        html += `
+          <div class="flex flex-col sm:flex-row items-start sm:items-stretch gap-4 p-5 rounded-2xl border border-slate-100 hover:border-slate-200 transition bg-white shadow-[0_2px_10px_-4px_rgba(0,0,0,0.02)] relative overflow-hidden" style="border-left: 5px solid ${univColor};">
+            <!-- 時間表示ブロック -->
+            <div class="sm:w-44 shrink-0 flex sm:flex-col justify-between sm:justify-center items-start border-b sm:border-b-0 sm:border-r border-slate-100 pb-3 sm:pb-0 sm:pr-4 w-full">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">STAGE #${index + 1}</span>
+                <span class="text-[11px] font-medium text-slate-400">${durationText}</span>
+              </div>
+              <div class="text-lg sm:text-xl font-bold font-mono text-slate-900 mt-1">
+                ${slot.startTime} <span class="text-slate-300 text-base font-normal">〜</span> ${slot.endTime}
+              </div>
+            </div>
+
+            <!-- バンド・詳細情報ブロック -->
+            <div class="flex-1 min-w-0 space-y-2">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center gap-3">
+                  <h3 class="text-base sm:text-lg font-bold text-slate-900 truncate">${band.name}</h3>
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold" style="background-color: ${univColor}15; color: ${univColor}; border: 1px solid ${univColor}40;">
+                    <span class="w-1.5 h-1.5 rounded-full" style="background-color: ${univColor};"></span>
+                    ${band.university || '-'}
+                  </span>
+                </div>
+                <div class="flex items-center gap-2">
+                  ${cueBadgeHtml}
+                  <button data-id="${slot.id}" class="edit-slot-btn p-1.5 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition" title="編集">
+                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- メンバー一覧 -->
+              <div class="flex flex-wrap gap-1.5 pt-0.5">
+                ${memberTagsHtml || '<span class="text-xs text-slate-400">メンバー未登録</span>'}
+              </div>
+
+              <!-- 備考 -->
+              ${slot.note ? `
+                <div class="text-xs text-slate-500 bg-slate-50 px-3 py-1.5 rounded-xl inline-block mt-1">
+                  <span class="font-semibold text-slate-600">Note:</span> ${slot.note}
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      });
+
+      timelineList.innerHTML = html;
+
+      // 編集ボタンイベント
+      document.querySelectorAll('.edit-slot-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          openModalForEdit(btn.getAttribute('data-id'));
+        });
+      });
+
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    // 5. モーダル操作
+    function openModalForCreate() {
+      editSlotIdInput.value = '';
+      modalTitle.textContent = '出演枠の追加';
+      deleteSlotBtn.classList.add('hidden');
+      slotForm.reset();
+
+      // 現在開いているタブをデフォルト選択
+      const dayRadio = slotForm.querySelector(`input[name="slot-day"][value="${activeDay}"]`);
+      if (dayRadio) dayRadio.checked = true;
+
+      modal.classList.remove('hidden');
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    function openModalForEdit(slotId) {
+      const data = slotsCache.get(slotId);
+      if (!data) return;
+
+      editSlotIdInput.value = slotId;
+      modalTitle.textContent = '出演枠の編集';
+      deleteSlotBtn.classList.remove('hidden');
+
+      const dayRadio = slotForm.querySelector(`input[name="slot-day"][value="${data.day || 'day1'}"]`);
+      if (dayRadio) dayRadio.checked = true;
+
+      selectBand.value = data.bandId || '';
+      document.getElementById('slot-start-time').value = data.startTime || '';
+      document.getElementById('slot-end-time').value = data.endTime || '';
+      document.getElementById('slot-note').value = data.note || '';
+
+      modal.classList.remove('hidden');
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    function closeModal() {
+      modal.classList.add('hidden');
+    }
+
+    openCreateModalBtn.addEventListener('click', openModalForCreate);
+    closeModalBtn.addEventListener('click', closeModal);
+    cancelBtn.addEventListener('click', closeModal);
+
+    // 6. 保存処理（追加 or 更新）
+    slotForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = document.getElementById('submit-btn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = '保存中...';
+
+      const slotId = editSlotIdInput.value;
+      const selectedDay = slotForm.querySelector('input[name="slot-day"]:checked').value;
+
+      const payload = {
+        day: selectedDay,
+        bandId: selectBand.value,
+        startTime: document.getElementById('slot-start-time').value,
+        endTime: document.getElementById('slot-end-time').value,
+        note: document.getElementById('slot-note').value.trim(),
+        updatedAt: serverTimestamp()
+      };
+
+      try {
+        if (slotId) {
+          await updateDoc(doc(db, 'timetable', slotId), payload);
+        } else {
+          payload.createdAt = serverTimestamp();
+          await addDoc(collection(db, 'timetable'), payload);
+        }
+        closeModal();
+      } catch (err) {
+        console.error('Firestore save error:', err);
+        alert('保存に失敗しました。');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '保存する';
+      }
+    });
+
+    // 7. 削除処理
+    deleteSlotBtn.addEventListener('click', async () => {
+      const slotId = editSlotIdInput.value;
+      if (!slotId) return;
+
+      if (confirm('この出演枠を削除してもよろしいですか？')) {
+        try {
+          await deleteDoc(doc(db, 'timetable', slotId));
+          closeModal();
+        } catch (err) {
+          console.error('Delete error:', err);
+          alert('削除に失敗しました。');
+        }
+      }
+    });
+  </script>
+</body>
+</html>
