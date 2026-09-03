@@ -20,11 +20,11 @@
     <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 md:mb-8">
       <div>
         <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">タイムテーブル</h1>
-        <p class="text-xs text-slate-400 mt-0.5 sm:mt-1">当日の出演順・転換時間の確認とスケジュール管理</p>
+        <p class="text-xs text-slate-400 mt-0.5 sm:mt-1">当日の出演順・休憩・転換のスケジュール管理</p>
       </div>
       <button id="open-create-modal-btn" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-2xl shadow-sm transition self-stretch sm:self-auto">
         <i data-lucide="plus" class="w-4 h-4"></i>
-        出演枠を追加
+        枠を追加 (演奏・休憩・転換)
       </button>
     </header>
 
@@ -43,14 +43,14 @@
       <div class="flex justify-between items-center mb-6 pb-4 border-b border-slate-100">
         <div>
           <h2 id="current-day-heading" class="text-base sm:text-lg font-bold text-slate-800">1日目 スケジュール</h2>
-          <p class="text-[11px] sm:text-xs text-slate-400">開始時刻順に並び替え</p>
+          <p class="text-[11px] sm:text-xs text-slate-400">開始時刻順に自動整列</p>
         </div>
         <span id="slot-count" class="text-xs text-slate-500 font-bold px-3 py-1 bg-slate-100 rounded-full">
           0 枠
         </span>
       </div>
 
-      <!-- タイムラインリスト（スマホ用縦ライン付き） -->
+      <!-- タイムラインリスト -->
       <div id="timeline-list" class="space-y-3 relative">
         <div class="text-center py-16 text-slate-400 text-sm">読み込み中...</div>
       </div>
@@ -59,15 +59,15 @@
 
   <!-- タイムテーブル枠 追加・編集モーダル -->
   <div id="modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl">
-      <div class="flex justify-between items-center mb-5">
-        <h3 id="modal-title" class="text-lg font-bold text-slate-800">出演枠の追加</h3>
+    <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl max-h-[92vh] flex flex-col">
+      <div class="flex justify-between items-center mb-5 shrink-0">
+        <h3 id="modal-title" class="text-lg font-bold text-slate-800">枠の追加</h3>
         <button id="close-modal-btn" class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 transition">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
-      <form id="slot-form" class="space-y-4">
+      <form id="slot-form" class="space-y-4 overflow-y-auto pr-1 flex-1">
         <input type="hidden" id="edit-slot-id" value="">
 
         <!-- 日程選択 -->
@@ -85,15 +85,42 @@
           </div>
         </div>
 
-        <!-- バンド選択 -->
+        <!-- 枠の種類選択 -->
         <div>
+          <label class="block text-xs font-semibold text-slate-500 mb-1.5">種類 <span class="text-rose-500">*</span></label>
+          <div class="grid grid-cols-2 gap-2 text-xs font-semibold">
+            <label class="flex items-center justify-center gap-1.5 p-2 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer has-[:checked]:bg-blue-50 has-[:checked]:border-blue-500 has-[:checked]:text-blue-600 transition">
+              <input type="radio" name="slot-type" value="band" checked class="hidden">
+              <i data-lucide="music" class="w-3.5 h-3.5"></i>
+              バンド演奏
+            </label>
+            <label class="flex items-center justify-center gap-1.5 p-2 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer has-[:checked]:bg-amber-50 has-[:checked]:border-amber-500 has-[:checked]:text-amber-700 transition">
+              <input type="radio" name="slot-type" value="lunch" class="hidden">
+              <i data-lucide="coffee" class="w-3.5 h-3.5"></i>
+              昼休憩 (60分)
+            </label>
+            <label class="flex items-center justify-center gap-1.5 p-2 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer has-[:checked]:bg-purple-50 has-[:checked]:border-purple-500 has-[:checked]:text-purple-700 transition">
+              <input type="radio" name="slot-type" value="transition" class="hidden">
+              <i data-lucide="arrow-left-right" class="w-3.5 h-3.5"></i>
+              転換 (15分)
+            </label>
+            <label class="flex items-center justify-center gap-1.5 p-2 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer has-[:checked]:bg-emerald-50 has-[:checked]:border-emerald-500 has-[:checked]:text-emerald-700 transition">
+              <input type="radio" name="slot-type" value="adjustment" class="hidden">
+              <i data-lucide="sliders" class="w-3.5 h-3.5"></i>
+              調整時間 (10分)
+            </label>
+          </div>
+        </div>
+
+        <!-- バンド選択（バンド演奏時のみ表示） -->
+        <div id="band-select-container">
           <label class="block text-xs font-semibold text-slate-500 mb-1.5">出演バンド <span class="text-rose-500">*</span></label>
-          <select id="slot-band-id" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-800">
+          <select id="slot-band-id" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-800">
             <option value="" disabled selected>バンドを選択してください</option>
           </select>
         </div>
 
-        <!-- 時間選択 -->
+        <!-- 時間選択 (開始〜終了) -->
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-xs font-semibold text-slate-500 mb-1.5">開始時刻 <span class="text-rose-500">*</span></label>
@@ -107,12 +134,12 @@
 
         <!-- 備考 -->
         <div>
-          <label class="block text-xs font-semibold text-slate-500 mb-1.5">備考 (転換・マイク要望など)</label>
-          <input type="text" id="slot-note" placeholder="例: 転換10分 / ゲスト枠" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-800">
+          <label class="block text-xs font-semibold text-slate-500 mb-1.5">備考・メモ (任意)</label>
+          <input type="text" id="slot-note" placeholder="例: お弁当配布 / 音響チェック / マイク本数確認" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-800">
         </div>
 
-        <!-- ボタン -->
-        <div class="pt-4 flex gap-3">
+        <!-- ボタン領域 -->
+        <div class="pt-4 flex gap-3 shrink-0">
           <button type="button" id="delete-slot-btn" class="hidden px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl text-sm font-semibold transition">
             削除
           </button>
@@ -142,11 +169,17 @@
       return UNIVERSITY_COLORS[name] || '#64748B';
     }
 
-    // 分計算ヘルパー
+    // 時間計算用ユーティリティ
     function timeToMinutes(t) {
       if (!t) return 0;
       const [h, m] = t.split(':').map(Number);
       return h * 60 + m;
+    }
+
+    function minutesToTime(totalMin) {
+      let h = Math.floor(totalMin / 60) % 24;
+      let m = totalMin % 60;
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
     }
 
     let activeDay = 'day1';
@@ -164,11 +197,55 @@
     const modalTitle = document.getElementById('modal-title');
     const slotForm = document.getElementById('slot-form');
     const editSlotIdInput = document.getElementById('edit-slot-id');
+    const bandSelectContainer = document.getElementById('band-select-container');
     const selectBand = document.getElementById('slot-band-id');
+    const startTimeInput = document.getElementById('slot-start-time');
+    const endTimeInput = document.getElementById('slot-end-time');
+    const slotNoteInput = document.getElementById('slot-note');
     const deleteSlotBtn = document.getElementById('delete-slot-btn');
     const openCreateModalBtn = document.getElementById('open-create-modal-btn');
     const closeModalBtn = document.getElementById('close-modal-btn');
     const cancelBtn = document.getElementById('cancel-btn');
+
+    // 枠タイプ選択時の自動切り替えとデフォルト時間適用
+    const typeRadios = slotForm.querySelectorAll('input[name="slot-type"]');
+    typeRadios.forEach(radio => {
+      radio.addEventListener('change', () => {
+        applyTypePreset(radio.value);
+      });
+    });
+
+    function applyTypePreset(type) {
+      if (type === 'band') {
+        bandSelectContainer.classList.remove('hidden');
+        selectBand.required = true;
+      } else {
+        bandSelectContainer.classList.add('hidden');
+        selectBand.required = false;
+        selectBand.value = '';
+      }
+
+      // 開始時間が入っている場合、デフォルト分数から終了時刻を自動計算
+      const start = startTimeInput.value;
+      if (start) {
+        let addMin = 0;
+        if (type === 'lunch') addMin = 60; // 昼休憩 1時間
+        else if (type === 'transition') addMin = 15; // 転換 15分
+        else if (type === 'adjustment') addMin = 10; // 調整時間 10分
+
+        if (addMin > 0) {
+          const newEnd = timeToMinutes(start) + addMin;
+          endTimeInput.value = minutesToTime(newEnd);
+        }
+      }
+    }
+
+    startTimeInput.addEventListener('change', () => {
+      const selectedType = slotForm.querySelector('input[name="slot-type"]:checked')?.value;
+      if (selectedType && selectedType !== 'band') {
+        applyTypePreset(selectedType);
+      }
+    });
 
     // 楽曲マスタ同期
     onSnapshot(collection(db, 'songs'), (snapshot) => {
@@ -216,7 +293,7 @@
       renderTimeline();
     }
 
-    // タイムテーブル購読
+    // タイムテーブル同期
     const q = query(collection(db, 'timetable'), orderBy('startTime', 'asc'));
     onSnapshot(q, (snapshot) => {
       slotsCache.clear();
@@ -226,7 +303,7 @@
       renderTimeline();
     });
 
-    // タイムライン描画（スマホ最適化版）
+    // タイムライン描画
     function renderTimeline() {
       const filteredSlots = [];
       slotsCache.forEach((data, id) => {
@@ -242,7 +319,7 @@
         timelineList.innerHTML = `
           <div class="text-center py-16 text-slate-400">
             <i data-lucide="calendar-x" class="w-10 h-10 mx-auto mb-2.5 stroke-[1.5] text-slate-300"></i>
-            <p class="text-sm">出演枠が登録されていません</p>
+            <p class="text-sm">出演枠・休憩が登録されていません</p>
           </div>
         `;
         if (window.lucide) window.lucide.createIcons();
@@ -250,36 +327,91 @@
       }
 
       let html = '';
+      let bandIndexCounter = 1; // 演奏枠用の通し番号 (#1, #2...)
+
       filteredSlots.forEach((slot, index) => {
+        const slotType = slot.type || 'band';
+        const durationMin = (slot.startTime && slot.endTime)
+          ? timeToMinutes(slot.endTime) - timeToMinutes(slot.startTime)
+          : 0;
+
+        // --- 1. 昼休憩枠カード ---
+        if (slotType === 'lunch') {
+          html += `
+            <div class="relative bg-amber-50/70 border border-amber-200/80 rounded-2xl p-4 transition shadow-sm overflow-hidden flex items-center justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                  <i data-lucide="coffee" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="font-mono text-base font-black text-amber-950">${slot.startTime} 〜 ${slot.endTime}</span>
+                    <span class="text-xs font-bold text-amber-700 bg-amber-200/60 px-2 py-0.5 rounded-md">昼休憩 (${durationMin}分)</span>
+                  </div>
+                  <p class="text-xs text-amber-800/80 mt-0.5">${slot.note || 'お昼休憩 / ロビー開放'}</p>
+                </div>
+              </div>
+              <button data-id="${slot.id}" class="edit-slot-btn p-1.5 text-amber-700 hover:bg-amber-100 rounded-lg transition shrink-0" title="編集">
+                <i data-lucide="edit-3" class="w-4 h-4"></i>
+              </button>
+            </div>
+          `;
+          return;
+        }
+
+        // --- 2. 転換枠カード ---
+        if (slotType === 'transition') {
+          html += `
+            <div class="relative bg-purple-50/60 border border-purple-200/70 rounded-2xl p-3.5 transition shadow-sm overflow-hidden flex items-center justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
+                  <i data-lucide="arrow-left-right" class="w-4 h-4"></i>
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="font-mono text-sm font-bold text-purple-950">${slot.startTime} 〜 ${slot.endTime}</span>
+                    <span class="text-[11px] font-bold text-purple-700 bg-purple-200/60 px-2 py-0.5 rounded-md">転換時間 (${durationMin}分)</span>
+                  </div>
+                  ${slot.note ? `<p class="text-[11px] text-purple-800/70 mt-0.5">${slot.note}</p>` : ''}
+                </div>
+              </div>
+              <button data-id="${slot.id}" class="edit-slot-btn p-1.5 text-purple-700 hover:bg-purple-100 rounded-lg transition shrink-0" title="編集">
+                <i data-lucide="edit-3" class="w-4 h-4"></i>
+              </button>
+            </div>
+          `;
+          return;
+        }
+
+        // --- 3. 調整時間枠カード ---
+        if (slotType === 'adjustment') {
+          html += `
+            <div class="relative bg-emerald-50/60 border border-emerald-200/70 rounded-2xl p-3.5 transition shadow-sm overflow-hidden flex items-center justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                  <i data-lucide="sliders" class="w-4 h-4"></i>
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="font-mono text-sm font-bold text-emerald-950">${slot.startTime} 〜 ${slot.endTime}</span>
+                    <span class="text-[11px] font-bold text-emerald-700 bg-emerald-200/60 px-2 py-0.5 rounded-md">調整時間 (${durationMin}分)</span>
+                  </div>
+                  ${slot.note ? `<p class="text-[11px] text-emerald-800/70 mt-0.5">${slot.note}</p>` : ''}
+                </div>
+              </div>
+              <button data-id="${slot.id}" class="edit-slot-btn p-1.5 text-emerald-700 hover:bg-emerald-100 rounded-lg transition shrink-0" title="編集">
+                <i data-lucide="edit-3" class="w-4 h-4"></i>
+              </button>
+            </div>
+          `;
+          return;
+        }
+
+        // --- 4. バンド演奏枠カード ---
         const band = bandsMap.get(slot.bandId) || { name: '（未登録または削除済）', university: '-', members: [], songIds: [] };
         const univColor = getUnivColor(band.university);
+        const currentStageNo = bandIndexCounter++;
 
-        // 演奏所要時間
-        let durationMin = 0;
-        if (slot.startTime && slot.endTime) {
-          durationMin = timeToMinutes(slot.endTime) - timeToMinutes(slot.startTime);
-        }
-
-        // 転換時間（前の枠の終了時間から現在の枠の開始時間までの差）
-        let intervalHtml = '';
-        if (index > 0) {
-          const prevSlot = filteredSlots[index - 1];
-          if (prevSlot.endTime && slot.startTime) {
-            const diff = timeToMinutes(slot.startTime) - timeToMinutes(prevSlot.endTime);
-            if (diff > 0) {
-              intervalHtml = `
-                <div class="flex items-center justify-center my-2 sm:my-3">
-                  <div class="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100/90 text-slate-500 text-[11px] font-semibold border border-slate-200/50">
-                    <i data-lucide="arrow-down" class="w-3 h-3 text-slate-400"></i>
-                    <span>転換・準備 ${diff}分</span>
-                  </div>
-                </div>
-              `;
-            }
-          }
-        }
-
-        // メンバーバッジ
         const members = band.members || [];
         const memberTagsHtml = members.map(m => `
           <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-medium">
@@ -288,7 +420,6 @@
           </span>
         `).join('');
 
-        // セットリストバッジ
         const songIds = band.songIds || [];
         const setlistTagsHtml = songIds.map((sid, sIdx) => {
           const song = songsMap.get(sid) || { title: '曲', duration: '', isMC: false };
@@ -315,16 +446,11 @@
         ` : '';
 
         html += `
-          ${intervalHtml}
-
-          <!-- 出演カード -->
           <div class="relative bg-white rounded-2xl sm:rounded-3xl border border-slate-100 shadow-[0_2px_12px_-3px_rgba(0,0,0,0.03)] p-4 sm:p-5 transition hover:border-slate-200 overflow-hidden" style="border-left: 5px solid ${univColor};">
-            
-            <!-- 上部: 時間バー ＆ アクション -->
             <div class="flex items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-100">
               <div class="flex items-center gap-2">
                 <span class="px-2 py-0.5 rounded-md bg-slate-900 text-white font-mono text-xs font-bold tracking-wider">
-                  #${index + 1}
+                  #${currentStageNo}
                 </span>
                 <span class="font-mono text-base sm:text-xl font-black text-slate-900 tracking-tight">
                   ${slot.startTime} <span class="text-slate-300 font-normal text-sm sm:text-base">〜</span> ${slot.endTime}
@@ -340,7 +466,6 @@
               </div>
             </div>
 
-            <!-- 中部: バンド名と大学名 -->
             <div class="mb-3">
               <div class="flex flex-wrap items-center gap-2">
                 <h3 class="text-base sm:text-lg font-bold text-slate-900 leading-snug">${band.name}</h3>
@@ -351,7 +476,6 @@
               </div>
             </div>
 
-            <!-- 下部: セットリスト（曲・MC） -->
             ${songIds.length > 0 ? `
               <div class="bg-slate-50/70 rounded-xl p-2.5 mb-2.5 border border-slate-100">
                 <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
@@ -364,12 +488,10 @@
               </div>
             ` : ''}
 
-            <!-- メンバー一覧 -->
             <div class="flex flex-wrap gap-1">
               ${memberTagsHtml || '<span class="text-[11px] text-slate-400">メンバー未登録</span>'}
             </div>
 
-            <!-- メモ -->
             ${slot.note ? `
               <div class="mt-2.5 text-[11px] text-slate-600 bg-amber-50/70 border border-amber-200/50 px-2.5 py-1.5 rounded-xl inline-block">
                 <span class="font-bold text-amber-700">Note:</span> ${slot.note}
@@ -393,12 +515,17 @@
     // モーダル操作
     function openModalForCreate() {
       editSlotIdInput.value = '';
-      modalTitle.textContent = '出演枠の追加';
+      modalTitle.textContent = '枠の追加';
       deleteSlotBtn.classList.add('hidden');
       slotForm.reset();
 
       const dayRadio = slotForm.querySelector(`input[name="slot-day"][value="${activeDay}"]`);
       if (dayRadio) dayRadio.checked = true;
+
+      // デフォルトはバンド演奏
+      const bandTypeRadio = slotForm.querySelector('input[name="slot-type"][value="band"]');
+      if (bandTypeRadio) bandTypeRadio.checked = true;
+      applyTypePreset('band');
 
       modal.classList.remove('hidden');
       if (window.lucide) window.lucide.createIcons();
@@ -409,16 +536,21 @@
       if (!data) return;
 
       editSlotIdInput.value = slotId;
-      modalTitle.textContent = '出演枠の編集';
+      modalTitle.textContent = '枠の編集';
       deleteSlotBtn.classList.remove('hidden');
 
       const dayRadio = slotForm.querySelector(`input[name="slot-day"][value="${data.day || 'day1'}"]`);
       if (dayRadio) dayRadio.checked = true;
 
+      const type = data.type || 'band';
+      const typeRadio = slotForm.querySelector(`input[name="slot-type"][value="${type}"]`);
+      if (typeRadio) typeRadio.checked = true;
+      applyTypePreset(type);
+
       selectBand.value = data.bandId || '';
-      document.getElementById('slot-start-time').value = data.startTime || '';
-      document.getElementById('slot-end-time').value = data.endTime || '';
-      document.getElementById('slot-note').value = data.note || '';
+      startTimeInput.value = data.startTime || '';
+      endTimeInput.value = data.endTime || '';
+      slotNoteInput.value = data.note || '';
 
       modal.classList.remove('hidden');
       if (window.lucide) window.lucide.createIcons();
@@ -432,7 +564,7 @@
     closeModalBtn.addEventListener('click', closeModal);
     cancelBtn.addEventListener('click', closeModal);
 
-    // 保存
+    // 保存処理
     slotForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const submitBtn = document.getElementById('submit-btn');
@@ -441,13 +573,15 @@
 
       const slotId = editSlotIdInput.value;
       const selectedDay = slotForm.querySelector('input[name="slot-day"]:checked').value;
+      const selectedType = slotForm.querySelector('input[name="slot-type"]:checked').value;
 
       const payload = {
         day: selectedDay,
-        bandId: selectBand.value,
-        startTime: document.getElementById('slot-start-time').value,
-        endTime: document.getElementById('slot-end-time').value,
-        note: document.getElementById('slot-note').value.trim(),
+        type: selectedType, // 'band' | 'lunch' | 'transition' | 'adjustment'
+        bandId: selectedType === 'band' ? selectBand.value : '',
+        startTime: startTimeInput.value,
+        endTime: endTimeInput.value,
+        note: slotNoteInput.value.trim(),
         updatedAt: serverTimestamp()
       };
 
@@ -467,12 +601,12 @@
       }
     });
 
-    // 削除
+    // 削除処理
     deleteSlotBtn.addEventListener('click', async () => {
       const slotId = editSlotIdInput.value;
       if (!slotId) return;
 
-      if (confirm('この出演枠を削除してもよろしいですか？')) {
+      if (confirm('この枠を削除してもよろしいですか？')) {
         try {
           await deleteDoc(doc(db, 'timetable', slotId));
           closeModal();
