@@ -9,6 +9,12 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap');
     body { font-family: 'Inter', 'Noto Sans JP', sans-serif; }
+    
+    /* ドラッグ時の視覚エフェクト */
+    .dragging {
+      opacity: 0.4;
+      border-color: #3b82f6 !important;
+    }
   </style>
 </head>
 <body class="bg-[#F8FAFC] text-slate-700 min-h-screen flex flex-col md:flex-row antialiased">
@@ -20,7 +26,7 @@
     <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8">
       <div>
         <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">バンド管理</h1>
-        <p class="text-xs text-slate-400 mt-0.5 sm:mt-1">登録バンドの出演管理・演奏楽曲（セトリ）の登録</p>
+        <p class="text-xs text-slate-400 mt-0.5 sm:mt-1">登録バンドの出演管理・セットリスト並べ替え（曲／MC）</p>
       </div>
       <button id="open-create-modal-btn" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-2xl shadow-sm transition self-start sm:self-auto">
         <i data-lucide="plus" class="w-4 h-4"></i>
@@ -40,11 +46,11 @@
         <table class="w-full text-left text-sm text-slate-600">
           <thead class="bg-slate-50/60 text-xs text-slate-400 uppercase tracking-wider border-b border-slate-100">
             <tr>
-              <th class="px-6 py-4">バンド名 / 大学</th>
-              <th class="px-6 py-4">メンバー構成</th>
-              <th class="px-6 py-4">演奏曲 (セットリスト)</th>
-              <th class="px-6 py-4 w-28">Cueシート</th>
-              <th class="px-6 py-4 text-right w-20">操作</th>
+              <th class="px-6 py-4 w-1/5">バンド名 / 大学</th>
+              <th class="px-6 py-4 w-1/4">メンバー構成</th>
+              <th class="px-6 py-4">セットリスト (曲 / MC)</th>
+              <th class="px-6 py-4 w-24">Cueシート</th>
+              <th class="px-6 py-4 text-right w-16">操作</th>
             </tr>
           </thead>
           <tbody id="band-table-body" class="divide-y divide-slate-100">
@@ -94,19 +100,19 @@
           </div>
         </div>
 
-        <!-- 演奏曲（Apple Music 検索・ID紐付けセクション） -->
+        <!-- 演奏曲＆MC（セットリスト並べ替え対応） -->
         <div class="pt-2 border-t border-slate-100">
           <div class="flex items-center justify-between mb-2">
             <div>
-              <label class="block text-xs font-bold text-slate-700">演奏楽曲 (セットリスト)</label>
-              <p class="text-[11px] text-slate-400">Apple Musicから楽曲を検索して追加します</p>
+              <label class="block text-xs font-bold text-slate-700">セットリスト (曲 / MC)</label>
+              <p class="text-[11px] text-slate-400">ドラッグまたは上下矢印ボタンで演奏順を変更できます</p>
             </div>
-            <span id="total-duration-display" class="text-xs font-semibold px-2 py-0.5 bg-blue-50 text-blue-600 rounded-full">
+            <span id="total-duration-display" class="text-xs font-semibold px-2.5 py-0.5 bg-blue-50 text-blue-600 rounded-full">
               合計 00:00
             </span>
           </div>
 
-          <!-- Apple Music 楽曲検索バー -->
+          <!-- 検索バー・MC追加 -->
           <div class="space-y-2 mb-3">
             <div class="flex gap-2">
               <div class="relative flex-1">
@@ -117,23 +123,24 @@
                 <i data-lucide="search" class="w-3.5 h-3.5"></i>
                 検索
               </button>
+              <button type="button" id="add-mc-btn" class="px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200/60 rounded-xl text-xs font-semibold transition shrink-0 flex items-center gap-1.5">
+                <i data-lucide="mic" class="w-3.5 h-3.5 text-amber-600"></i>
+                + MC追加
+              </button>
             </div>
 
-            <!-- 検索候補のドロップダウン -->
-            <div id="search-results-box" class="hidden bg-white border border-slate-200 rounded-2xl shadow-lg max-h-48 overflow-y-auto divide-y divide-slate-100 p-1">
-              <!-- 検索結果アイテム挿入先 -->
-            </div>
+            <div id="search-results-box" class="hidden bg-white border border-slate-200 rounded-2xl shadow-lg max-h-48 overflow-y-auto divide-y divide-slate-100 p-1"></div>
           </div>
 
-          <!-- 選択された曲一覧 (IDベースで保持) -->
+          <!-- 並べ替え可能なセットリストコンテナ -->
           <div id="selected-songs-list" class="space-y-1.5">
             <p id="empty-songs-hint" class="text-xs text-slate-400 py-3 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
-              楽曲がまだ選択されていません
+              曲またはMCがまだ追加されていません
             </p>
           </div>
         </div>
 
-        <!-- Cueシート アップロード -->
+        <!-- Cueシート -->
         <div class="pt-2 border-t border-slate-100">
           <label class="block text-xs font-semibold text-slate-500 mb-1.5">Cueシート (画像)</label>
           <div class="space-y-2">
@@ -155,7 +162,7 @@
           </div>
         </div>
 
-        <!-- パートと名前 -->
+        <!-- メンバー -->
         <div class="pt-2 border-t border-slate-100">
           <div class="flex items-center justify-between mb-1.5">
             <label class="block text-xs font-semibold text-slate-500">メンバー (パート & 名前) <span class="text-rose-500">*</span></label>
@@ -185,7 +192,6 @@
 
   <script src="layout.js"></script>
 
-  <!-- Firestore & Apple Music検索スクリプト -->
   <script type="module">
     import { db, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, serverTimestamp } from './firebase-config.js';
 
@@ -199,7 +205,6 @@
       return UNIVERSITY_COLORS[name] || '#64748B';
     }
 
-    // ミリ秒を "分:秒" に整形
     function formatMs(ms) {
       if (!ms) return "0:00";
       const totalSec = Math.floor(ms / 1000);
@@ -208,23 +213,19 @@
       return `${min}:${sec}`;
     }
 
-    // ローカルキャッシュ
     let bandsCache = new Map();
-    let songsCache = new Map(); // songId -> songData
+    let songsCache = new Map();
 
-    // 楽曲マスタ(songs)を常時購読してキャッシュ
     onSnapshot(collection(db, 'songs'), (snapshot) => {
       songsCache.clear();
       snapshot.forEach(docSnap => {
         songsCache.set(docSnap.id, docSnap.data());
       });
-      renderBandList(); // 楽曲情報更新時に一覧を再描画
+      renderBandList();
     });
 
-    // モーダル内で編集中に選択された楽曲IDリスト
     let currentSelectedSongIds = [];
 
-    // DOM要素
     const modal = document.getElementById('modal');
     const modalTitle = document.getElementById('modal-title');
     const openCreateModalBtn = document.getElementById('open-create-modal-btn');
@@ -245,12 +246,12 @@
 
     const musicSearchInput = document.getElementById('music-search-input');
     const musicSearchBtn = document.getElementById('music-search-btn');
+    const addMcBtn = document.getElementById('add-mc-btn');
     const searchResultsBox = document.getElementById('search-results-box');
     const selectedSongsList = document.getElementById('selected-songs-list');
     const emptySongsHint = document.getElementById('empty-songs-hint');
     const totalDurationDisplay = document.getElementById('total-duration-display');
 
-    // Cueプレビュー
     function updateCuePreview(url) {
       if (url) {
         cuePreviewImg.src = url;
@@ -298,7 +299,6 @@
       updateCuePreview('');
     });
 
-    // メンバー行生成
     function addMemberRow(part = '', name = '') {
       const row = document.createElement('div');
       row.className = 'flex items-center gap-2 member-row';
@@ -318,7 +318,7 @@
     }
     addMemberRowBtn.addEventListener('click', () => addMemberRow('', ''));
 
-    // --- Apple Music / iTunes Search API 連携 ---
+    // --- Apple Music 検索 ---
     async function searchAppleMusic() {
       const term = musicSearchInput.value.trim();
       if (!term) return;
@@ -329,7 +329,6 @@
       searchResultsBox.classList.remove('hidden');
 
       try {
-        // iTunes Search API (曲単位で日本ストア検索)
         const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&country=jp&limit=10`);
         const data = await res.json();
 
@@ -361,7 +360,6 @@
 
         searchResultsBox.innerHTML = html;
 
-        // 候補クリックで songs コレクションへ登録 & バンドへ紐付け
         searchResultsBox.querySelectorAll('.search-result-item').forEach(el => {
           el.addEventListener('click', async () => {
             const item = data.results[el.getAttribute('data-idx')];
@@ -370,7 +368,6 @@
         });
 
       } catch (err) {
-        console.error('iTunes Search API Error:', err);
         searchResultsBox.innerHTML = '<div class="p-3 text-xs text-rose-500 text-center">検索エラーが発生しました</div>';
       } finally {
         musicSearchBtn.disabled = false;
@@ -386,31 +383,29 @@
       }
     });
 
-    // 楽曲を songs コレクションに保存（既に同じものがあれば再利用）して選択リストに追加
     async function registerAndAddSong(track) {
       searchResultsBox.classList.add('hidden');
       musicSearchInput.value = '';
 
       const durationStr = formatMs(track.trackTimeMillis);
       
-      // songs コレクションへ新規保存（ID発番）
       const docRef = await addDoc(collection(db, 'songs'), {
         title: track.trackName,
         artist: track.artistName,
         duration: durationStr,
         durationMs: track.trackTimeMillis,
+        isMC: false,
         artworkUrl: track.artworkUrl60 || '',
-        appleMusicTrackId: track.trackId || null,
         createdAt: serverTimestamp()
       });
 
-      // キャッシュへ即時反映し、選択リストに追加
       const newSongId = docRef.id;
       songsCache.set(newSongId, {
         title: track.trackName,
         artist: track.artistName,
         duration: durationStr,
         durationMs: track.trackTimeMillis,
+        isMC: false,
         artworkUrl: track.artworkUrl60 || ''
       });
 
@@ -418,7 +413,51 @@
       renderSelectedSongsInModal();
     }
 
-    // モーダル内の楽曲リスト描画
+    // --- MC追加 ---
+    addMcBtn.addEventListener('click', async () => {
+      const minutesInput = prompt('MCの時間（分数）を入力してください (例: 2 または 3):', '3');
+      if (minutesInput === null) return;
+
+      const minutes = parseFloat(minutesInput);
+      if (isNaN(minutes) || minutes <= 0) {
+        alert('正しい分数を入力してください。');
+        return;
+      }
+
+      const durationMs = Math.round(minutes * 60 * 1000);
+      const durationStr = formatMs(durationMs);
+
+      const docRef = await addDoc(collection(db, 'songs'), {
+        title: `MC (${minutes}分)`,
+        artist: 'TALK',
+        duration: durationStr,
+        durationMs: durationMs,
+        isMC: true,
+        createdAt: serverTimestamp()
+      });
+
+      const mcId = docRef.id;
+      songsCache.set(mcId, {
+        title: `MC (${minutes}分)`,
+        artist: 'TALK',
+        duration: durationStr,
+        durationMs: durationMs,
+        isMC: true
+      });
+
+      currentSelectedSongIds.push(mcId);
+      renderSelectedSongsInModal();
+    });
+
+    // --- 順序入れ替えヘルパー関数 ---
+    function moveSong(fromIdx, toIdx) {
+      if (toIdx < 0 || toIdx >= currentSelectedSongIds.length) return;
+      const movedItem = currentSelectedSongIds.splice(fromIdx, 1)[0];
+      currentSelectedSongIds.splice(toIdx, 0, movedItem);
+      renderSelectedSongsInModal();
+    }
+
+    // --- モーダル内セットリスト描画 (D&D + 矢印ボタン) ---
     function renderSelectedSongsInModal() {
       if (currentSelectedSongIds.length === 0) {
         emptySongsHint.classList.remove('hidden');
@@ -432,31 +471,95 @@
 
       let totalMs = 0;
       currentSelectedSongIds.forEach((id, index) => {
-        const song = songsCache.get(id) || { title: '楽曲情報取得中...', artist: '-', duration: '0:00', durationMs: 0 };
-        totalMs += Number(song.durationMs || 0);
+        const item = songsCache.get(id) || { title: '取得中...', artist: '-', duration: '0:00', durationMs: 0, isMC: false };
+        totalMs += Number(item.durationMs || 0);
 
         const chip = document.createElement('div');
-        chip.className = 'selected-song-chip flex items-center justify-between p-2 px-3 bg-slate-50 border border-slate-200/80 rounded-xl text-xs';
+        const isMc = item.isMC === true;
+
+        chip.className = `selected-song-chip flex items-center justify-between p-2.5 px-3 rounded-2xl text-xs transition select-none cursor-grab active:cursor-grabbing border ${
+          isMc 
+            ? 'bg-amber-50/80 border-amber-200 text-amber-900 shadow-sm' 
+            : 'bg-white border-slate-200/80 text-slate-800 shadow-sm'
+        }`;
+        chip.setAttribute('draggable', 'true');
+        chip.setAttribute('data-index', index);
+
         chip.innerHTML = `
           <div class="flex items-center gap-2.5 min-w-0">
-            <span class="w-4 text-center font-mono font-bold text-slate-400 text-[11px]">${index + 1}</span>
-            <div class="truncate">
-              <span class="font-bold text-slate-800">${song.title}</span>
-              <span class="text-slate-400 text-[11px] ml-1">/ ${song.artist}</span>
+            <!-- ドラッグハンドルアイコン -->
+            <span class="cursor-grab text-slate-300 hover:text-slate-500">
+              <i data-lucide="grip-vertical" class="w-4 h-4"></i>
+            </span>
+            <span class="w-5 text-center font-mono font-bold ${isMc ? 'text-amber-600' : 'text-slate-400'} text-xs">${index + 1}.</span>
+            <div class="truncate flex items-center gap-1.5">
+              ${isMc ? '<i data-lucide="mic" class="w-3.5 h-3.5 text-amber-600 shrink-0"></i>' : ''}
+              <span class="font-bold ${isMc ? 'text-amber-800' : 'text-slate-800'} truncate">${item.title}</span>
+              ${!isMc ? `<span class="text-slate-400 text-[11px] truncate">/ ${item.artist}</span>` : ''}
             </div>
           </div>
-          <div class="flex items-center gap-2 shrink-0">
-            <span class="font-mono text-slate-500 font-medium">${song.duration}</span>
-            <button type="button" data-idx="${index}" class="remove-song-chip-btn p-1 text-slate-400 hover:text-rose-500 transition">
+          <div class="flex items-center gap-1 shrink-0 ml-2">
+            <span class="font-mono font-medium mr-1 ${isMc ? 'text-amber-600' : 'text-slate-500'}">${item.duration}</span>
+            
+            <!-- 上へボタン -->
+            <button type="button" data-idx="${index}" class="move-up-btn p-1 text-slate-400 hover:text-blue-600 rounded hover:bg-slate-100 transition ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}" title="上へ移動">
+              <i data-lucide="chevron-up" class="w-3.5 h-3.5"></i>
+            </button>
+            <!-- 下へボタン -->
+            <button type="button" data-idx="${index}" class="move-down-btn p-1 text-slate-400 hover:text-blue-600 rounded hover:bg-slate-100 transition ${index === currentSelectedSongIds.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}" title="下へ移動">
+              <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+            </button>
+            <!-- 削除ボタン -->
+            <button type="button" data-idx="${index}" class="remove-song-chip-btn p-1 text-slate-400 hover:text-rose-500 rounded hover:bg-slate-100 transition ml-0.5" title="削除">
               <i data-lucide="x" class="w-3.5 h-3.5"></i>
             </button>
           </div>
         `;
 
+        // 上下移動ボタンイベント
+        chip.querySelector('.move-up-btn').addEventListener('click', (e) => {
+          e.stopPropagation();
+          const idx = Number(e.currentTarget.getAttribute('data-idx'));
+          moveSong(idx, idx - 1);
+        });
+
+        chip.querySelector('.move-down-btn').addEventListener('click', (e) => {
+          e.stopPropagation();
+          const idx = Number(e.currentTarget.getAttribute('data-idx'));
+          moveSong(idx, idx + 1);
+        });
+
+        // 削除ボタンイベント
         chip.querySelector('.remove-song-chip-btn').addEventListener('click', (e) => {
+          e.stopPropagation();
           const idx = Number(e.currentTarget.getAttribute('data-idx'));
           currentSelectedSongIds.splice(idx, 1);
           renderSelectedSongsInModal();
+        });
+
+        // --- Drag & Drop イベント ---
+        chip.addEventListener('dragstart', (e) => {
+          chip.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', index);
+        });
+
+        chip.addEventListener('dragend', () => {
+          chip.classList.remove('dragging');
+        });
+
+        chip.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+        });
+
+        chip.addEventListener('drop', (e) => {
+          e.preventDefault();
+          const fromIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
+          const toIndex = index;
+          if (fromIndex !== toIndex) {
+            moveSong(fromIndex, toIndex);
+          }
         });
 
         selectedSongsList.appendChild(chip);
@@ -500,7 +603,6 @@
       document.getElementById('band-university').value = data.university || '';
       updateCuePreview(data.cueSheetUrl || '');
 
-      // 楽曲IDリストの復元
       currentSelectedSongIds = [...(data.songIds || [])];
       renderSelectedSongsInModal();
 
@@ -524,7 +626,7 @@
     closeModalBtn.addEventListener('click', closeModal);
     cancelBtn.addEventListener('click', closeModal);
 
-    // バンド保存
+    // 保存
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const submitBtn = document.getElementById('submit-btn');
@@ -546,7 +648,7 @@
         cueSheetUrl: cueUrlInput.value.trim() || '',
         members: members,
         memberCount: members.length,
-        songIds: currentSelectedSongIds, // 楽曲IDの配列を保存
+        songIds: currentSelectedSongIds, // 並べ替えた順番の配列
         updatedAt: serverTimestamp()
       };
 
@@ -559,7 +661,6 @@
         }
         closeModal();
       } catch (err) {
-        console.error('Firestore save error:', err);
         alert('保存に失敗しました。');
       } finally {
         submitBtn.disabled = false;
@@ -581,7 +682,7 @@
       }
     });
 
-    // --- バンド一覧の同期と描画 ---
+    // 一覧同期と描画
     const q = query(collection(db, 'bands'), orderBy('createdAt', 'desc'));
     onSnapshot(q, (snapshot) => {
       bandsCache.clear();
@@ -617,20 +718,30 @@
           </span>
         `).join('');
 
-        // 楽曲情報の解決（songIdsからsongsCacheを参照）
+        // セットリスト一覧のHTML生成（曲順番号つき）
         const songIds = data.songIds || [];
         let totalMs = 0;
-        const songsHtml = songIds.length > 0 ? songIds.map((sid, idx) => {
-          const song = songsCache.get(sid) || { title: '未取得', artist: '', duration: '0:00', durationMs: 0 };
-          totalMs += Number(song.durationMs || 0);
-          return `
-            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 border border-slate-200/70 rounded-lg text-xs text-slate-700">
-              <span class="font-mono text-slate-400 font-bold">${idx + 1}.</span>
-              <span class="font-semibold text-slate-800">${song.title}</span>
-              <span class="text-slate-400">(${song.duration})</span>
+        const setlistHtml = songIds.length > 0 ? `
+          <div class="space-y-1">
+            <div class="flex flex-wrap gap-1.5">
+              ${songIds.map((sid, idx) => {
+                const item = songsCache.get(sid) || { title: '未取得', artist: '', duration: '0:00', durationMs: 0, isMC: false };
+                totalMs += Number(item.durationMs || 0);
+                const isMc = item.isMC === true;
+
+                return `
+                  <div class="inline-flex items-center gap-1.5 px-2.5 py-1 ${isMc ? 'bg-amber-50/80 border-amber-200 text-amber-900' : 'bg-slate-50 border-slate-200/70 text-slate-700'} border rounded-lg text-xs">
+                    <span class="font-mono ${isMc ? 'text-amber-500' : 'text-slate-400'} font-bold">${idx + 1}.</span>
+                    ${isMc ? '<i data-lucide="mic" class="w-3 h-3 text-amber-600"></i>' : ''}
+                    <span class="font-semibold">${item.title}</span>
+                    <span class="${isMc ? 'text-amber-600' : 'text-slate-400'}">(${item.duration})</span>
+                  </div>
+                `;
+              }).join('')}
             </div>
-          `;
-        }).join('') : '<span class="text-xs text-slate-400">曲未登録</span>';
+            <div class="text-[11px] font-semibold text-slate-400 pt-0.5">演奏目安 (MC込): ${formatMs(totalMs)}</div>
+          </div>
+        ` : '<span class="text-xs text-slate-400">セトリ未登録</span>';
 
         const cueBadgeHtml = data.cueSheetUrl ? `
           <a href="${data.cueSheetUrl}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-xs font-semibold transition" title="新しいタブで開く">
@@ -657,12 +768,7 @@
               </div>
             </td>
             <td class="px-6 py-4">
-              <div class="space-y-1">
-                <div class="flex flex-wrap gap-1.5">
-                  ${songsHtml}
-                </div>
-                ${songIds.length > 0 ? `<div class="text-[11px] font-semibold text-slate-400">演奏目安: ${formatMs(totalMs)}</div>` : ''}
-              </div>
+              ${setlistHtml}
             </td>
             <td class="px-6 py-4">
               ${cueBadgeHtml}
@@ -694,15 +800,11 @@
               </button>
             </div>
 
-            <!-- 楽曲一覧 -->
             <div>
-              <p class="text-[11px] font-semibold text-slate-400 mb-1">演奏曲 (目安 ${formatMs(totalMs)}):</p>
-              <div class="flex flex-wrap gap-1.5">
-                ${songsHtml}
-              </div>
+              <p class="text-[11px] font-semibold text-slate-400 mb-1">セットリスト:</p>
+              ${setlistHtml}
             </div>
 
-            <!-- メンバー -->
             <div class="flex flex-wrap gap-1 pt-1">
               ${memberTagsHtml || '<span class="text-xs text-slate-400">メンバー未登録</span>'}
             </div>
