@@ -20,7 +20,7 @@
     <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8">
       <div>
         <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">バンド管理</h1>
-        <p class="text-xs text-slate-400 mt-0.5 sm:mt-1">登録バンドの出演管理・編集（ID管理）</p>
+        <p class="text-xs text-slate-400 mt-0.5 sm:mt-1">登録バンドの出演管理・Cueシートの登録</p>
       </div>
       <button id="open-create-modal-btn" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-2xl shadow-sm transition self-start sm:self-auto">
         <i data-lucide="plus" class="w-4 h-4"></i>
@@ -35,16 +35,16 @@
         <span id="band-count" class="text-xs text-slate-400 font-medium">合計 0 件</span>
       </div>
 
-      <!-- PC向けテーブル -->
+      <!-- PC向けテーブル（バンドID列は非表示に修正） -->
       <div class="overflow-x-auto hidden md:block">
         <table class="w-full text-left text-sm text-slate-600">
           <thead class="bg-slate-50/60 text-xs text-slate-400 uppercase tracking-wider border-b border-slate-100">
             <tr>
-              <th class="px-6 py-4 w-36">バンドID</th>
               <th class="px-6 py-4">バンド名</th>
               <th class="px-6 py-4">大学・団体</th>
               <th class="px-6 py-4">メンバー構成 (パート・名前)</th>
-              <th class="px-6 py-4 text-right w-24">操作</th>
+              <th class="px-6 py-4 w-32">Cueシート</th>
+              <th class="px-6 py-4 text-right w-20">操作</th>
             </tr>
           </thead>
           <tbody id="band-table-body" class="divide-y divide-slate-100">
@@ -62,20 +62,18 @@
     </div>
   </main>
 
-  <!-- 新規登録＆編集兼用モーダル -->
+  <!-- 新規登録＆編集モーダル -->
   <div id="modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl max-h-[90vh] flex flex-col">
       <div class="flex justify-between items-center mb-5 shrink-0">
-        <div>
-          <h3 id="modal-title" class="text-lg font-bold text-slate-800">バンド新規登録</h3>
-          <p id="modal-band-id-display" class="text-xs font-mono text-slate-400 mt-0.5 hidden"></p>
-        </div>
+        <h3 id="modal-title" class="text-lg font-bold text-slate-800">バンド新規登録</h3>
         <button id="close-modal-btn" class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 transition">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
       <form id="band-form" class="space-y-4 overflow-y-auto pr-1 flex-1">
+        <!-- 内部管理用ID -->
         <input type="hidden" id="edit-band-id" value="">
 
         <!-- バンド名 -->
@@ -94,6 +92,32 @@
             <option value="愛知教育大学 軽音学部">愛知教育大学 軽音学部</option>
             <option value="中京大学 サウンドコミュニケーション">中京大学 サウンドコミュニケーション</option>
           </select>
+        </div>
+
+        <!-- Cueシート アップローダー連携 -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 mb-1.5">Cueシート (画像)</label>
+          <div class="space-y-2">
+            <div class="flex items-center gap-2">
+              <label class="cursor-pointer inline-flex items-center gap-2 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-medium transition shrink-0">
+                <i data-lucide="upload" class="w-4 h-4"></i>
+                <span>ファイルを選択</span>
+                <input type="file" id="cue-file-input" accept="image/*" class="hidden">
+              </label>
+              <span id="upload-status" class="text-xs text-slate-400 truncate">未選択</span>
+            </div>
+
+            <!-- 画像URL入力/保持欄 -->
+            <input type="url" id="band-cue-url" placeholder="https://ul.h3z.jp/... (自動入力または直接入力)" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-800 font-mono">
+
+            <!-- プレビュー表示 -->
+            <div id="cue-preview-container" class="hidden relative rounded-xl border border-slate-200 overflow-hidden bg-slate-50 p-2 max-w-xs">
+              <img id="cue-preview-img" src="" alt="Cue Sheet Preview" class="h-28 w-auto rounded-lg object-contain mx-auto">
+              <button type="button" id="remove-cue-btn" class="absolute top-3 right-3 bg-white/80 p-1 rounded-md text-slate-500 hover:text-rose-500 transition">
+                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </div>
         </div>
 
         <!-- パートと名前 -->
@@ -126,11 +150,10 @@
 
   <script src="layout.js"></script>
 
-  <!-- Firestore連携スクリプト -->
+  <!-- Firestore & アップローダー連携スクリプト -->
   <script type="module">
     import { db, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, serverTimestamp } from './firebase-config.js';
 
-    // 団体ごとのテーマカラー設定
     const UNIVERSITY_COLORS = {
       '愛知学院大学': '#C97DE6',
       '名古屋商科大学 軽音学部': '#61C253',
@@ -139,14 +162,13 @@
     };
 
     function getUnivColor(name) {
-      return UNIVERSITY_COLORS[name] || '#64748B'; // 未設定時はスレート色
+      return UNIVERSITY_COLORS[name] || '#64748B';
     }
 
     let bandsCache = new Map();
 
     const modal = document.getElementById('modal');
     const modalTitle = document.getElementById('modal-title');
-    const modalBandIdDisplay = document.getElementById('modal-band-id-display');
     const openCreateModalBtn = document.getElementById('open-create-modal-btn');
     const closeModalBtn = document.getElementById('close-modal-btn');
     const cancelBtn = document.getElementById('cancel-btn');
@@ -156,12 +178,86 @@
     const membersContainer = document.getElementById('members-container');
     const addMemberRowBtn = document.getElementById('add-member-row-btn');
 
+    // Cueシート関連エレメント
+    const cueFileInput = document.getElementById('cue-file-input');
+    const cueUrlInput = document.getElementById('band-cue-url');
+    const uploadStatus = document.getElementById('upload-status');
+    const cuePreviewContainer = document.getElementById('cue-preview-container');
+    const cuePreviewImg = document.getElementById('cue-preview-img');
+    const removeCueBtn = document.getElementById('remove-cue-btn');
+
+    // Cueシートのプレビュー表示更新
+    function updateCuePreview(url) {
+      if (url) {
+        cuePreviewImg.src = url;
+        cuePreviewContainer.classList.remove('hidden');
+        cueUrlInput.value = url;
+      } else {
+        cuePreviewImg.src = '';
+        cuePreviewContainer.classList.add('hidden');
+        cueUrlInput.value = '';
+        uploadStatus.textContent = '未選択';
+      }
+    }
+
+    // h3zjp Media Uploader へのアップロード処理
+    cueFileInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      uploadStatus.textContent = `アップロード中: ${file.name}...`;
+      uploadStatus.className = 'text-xs text-blue-600 truncate animate-pulse';
+
+      const formData = new FormData();
+      // CURL仕様に合わせて files フィールドにBlob/Fileを追加
+      formData.append('files', file);
+
+      try {
+        const response = await fetch('https://ul.h3z.jp/uploader-work/work.php', {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json'
+          },
+          body: formData
+        });
+
+        if (!response.ok) throw new Error(`Upload HTTP error: ${response.status}`);
+
+        const result = await response.json();
+        // {"files":[{"name":"...","url":"https://ul.h3z.jp/xxxx.jpg"}]}
+        if (result && result.files && result.files[0] && result.files[0].url) {
+          const uploadedUrl = result.files[0].url;
+          updateCuePreview(uploadedUrl);
+          uploadStatus.textContent = 'アップロード完了！';
+          uploadStatus.className = 'text-xs text-emerald-600 truncate font-semibold';
+        } else {
+          throw new Error('無効なレスポンス形式です');
+        }
+      } catch (err) {
+        console.error('Cue upload failed:', err);
+        uploadStatus.textContent = 'アップロード失敗 (手動でURLを入力してください)';
+        uploadStatus.className = 'text-xs text-rose-500 truncate';
+      }
+    });
+
+    // 手動入力時のプレビュー追従
+    cueUrlInput.addEventListener('input', (e) => {
+      const url = e.target.value.trim();
+      if (url) updateCuePreview(url);
+      else updateCuePreview('');
+    });
+
+    removeCueBtn.addEventListener('click', () => {
+      cueFileInput.value = '';
+      updateCuePreview('');
+    });
+
     function openModalForCreate() {
       editBandIdInput.value = '';
       modalTitle.textContent = 'バンド新規登録';
-      modalBandIdDisplay.classList.add('hidden');
       deleteBtn.classList.add('hidden');
       form.reset();
+      updateCuePreview('');
       membersContainer.innerHTML = '';
       
       addMemberRow('Vo.', '');
@@ -179,12 +275,11 @@
 
       editBandIdInput.value = bandId;
       modalTitle.textContent = 'バンド情報の編集';
-      modalBandIdDisplay.textContent = `ID: ${bandId}`;
-      modalBandIdDisplay.classList.remove('hidden');
       deleteBtn.classList.remove('hidden');
 
       document.getElementById('band-name').value = data.name || '';
       document.getElementById('band-university').value = data.university || '';
+      updateCuePreview(data.cueSheetUrl || '');
 
       membersContainer.innerHTML = '';
       const members = data.members || [];
@@ -250,6 +345,7 @@
       const payload = {
         name: document.getElementById('band-name').value.trim(),
         university: document.getElementById('band-university').value,
+        cueSheetUrl: cueUrlInput.value.trim() || '',
         members: members,
         memberCount: members.length,
         updatedAt: serverTimestamp()
@@ -277,7 +373,7 @@
       const bandId = editBandIdInput.value;
       if (!bandId) return;
 
-      if (confirm('このバンドを削除してもよろしいですか？この操作は取り消せません。')) {
+      if (confirm('このバンドを削除してもよろしいですか？')) {
         try {
           await deleteDoc(doc(db, 'bands', bandId));
           closeModal();
@@ -322,14 +418,17 @@
           </span>
         `).join('');
 
-        // PCテーブル
+        // Cueシートのバッジ/リンク
+        const cueBadgeHtml = data.cueSheetUrl ? `
+          <a href="${data.cueSheetUrl}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-xs font-semibold transition" title="新しいタブでCueシートを開く">
+            <i data-lucide="image" class="w-3.5 h-3.5"></i>
+            <span>表示</span>
+          </a>
+        ` : `<span class="text-xs text-slate-400 font-normal">未登録</span>`;
+
+        // PCテーブル（ID列なし）
         tableHtml += `
           <tr class="hover:bg-slate-50/50 transition align-top">
-            <td class="px-6 py-4">
-              <span class="font-mono text-xs bg-slate-100 text-slate-500 px-2 py-1 rounded-md tracking-wider border border-slate-200/50">
-                ${bandId.slice(0, 7)}...
-              </span>
-            </td>
             <td class="px-6 py-4 font-bold text-slate-800">${data.name}</td>
             <td class="px-6 py-4">
               <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold" style="background-color: ${univColor}15; color: ${univColor}; border: 1px solid ${univColor}40;">
@@ -341,6 +440,9 @@
               <div class="flex flex-wrap gap-1.5">
                 ${memberTagsHtml || '<span class="text-xs text-slate-400">未登録</span>'}
               </div>
+            </td>
+            <td class="px-6 py-4">
+              ${cueBadgeHtml}
             </td>
             <td class="px-6 py-4 text-right">
               <button data-id="${bandId}" class="edit-btn p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition" title="編集">
@@ -355,15 +457,13 @@
           <div class="p-5 space-y-3 relative overflow-hidden" style="border-left: 4px solid ${univColor};">
             <div class="flex justify-between items-start">
               <div>
-                <span class="font-mono text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded tracking-wider">
-                  ID: ${bandId.slice(0, 6)}
-                </span>
-                <h4 class="font-bold text-slate-800 text-base mt-1">${data.name}</h4>
-                <div class="mt-1">
+                <h4 class="font-bold text-slate-800 text-base">${data.name}</h4>
+                <div class="mt-1 flex items-center gap-2">
                   <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold" style="background-color: ${univColor}15; color: ${univColor}; border: 1px solid ${univColor}40;">
                     <span class="w-1.5 h-1.5 rounded-full" style="background-color: ${univColor};"></span>
                     ${data.university || '-'}
                   </span>
+                  ${cueBadgeHtml}
                 </div>
               </div>
               <button data-id="${bandId}" class="edit-btn p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition">
