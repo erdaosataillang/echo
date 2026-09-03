@@ -76,7 +76,6 @@
       </div>
 
       <form id="band-form" class="space-y-4 overflow-y-auto pr-1 flex-1">
-        <!-- 編集時用のバンドID保持フィールド（非表示） -->
         <input type="hidden" id="edit-band-id" value="">
 
         <!-- バンド名 -->
@@ -131,7 +130,18 @@
   <script type="module">
     import { db, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, serverTimestamp } from './firebase-config.js';
 
-    // ローカルキャッシュ用（IDから即座にデータを取得するため）
+    // 団体ごとのテーマカラー設定
+    const UNIVERSITY_COLORS = {
+      '愛知学院大学': '#C97DE6',
+      '名古屋商科大学 軽音学部': '#61C253',
+      '中京大学 サウンドコミュニケーション': '#C25361',
+      '愛知教育大学 軽音学部': '#5399C2'
+    };
+
+    function getUnivColor(name) {
+      return UNIVERSITY_COLORS[name] || '#64748B'; // 未設定時はスレート色
+    }
+
     let bandsCache = new Map();
 
     const modal = document.getElementById('modal');
@@ -146,7 +156,6 @@
     const membersContainer = document.getElementById('members-container');
     const addMemberRowBtn = document.getElementById('add-member-row-btn');
 
-    // モーダル開閉
     function openModalForCreate() {
       editBandIdInput.value = '';
       modalTitle.textContent = 'バンド新規登録';
@@ -155,7 +164,6 @@
       form.reset();
       membersContainer.innerHTML = '';
       
-      // デフォルト行の追加
       addMemberRow('Vo.', '');
       addMemberRow('Gt.', '');
       addMemberRow('Ba.', '');
@@ -194,11 +202,10 @@
       modal.classList.add('hidden');
     }
 
-    openCreateModalBtn.addEventListener('click', openCreateModalBtn => openModalForCreate());
+    openCreateModalBtn.addEventListener('click', () => openModalForCreate());
     closeModalBtn.addEventListener('click', closeModal);
     cancelBtn.addEventListener('click', closeModal);
 
-    // メンバー行の生成
     function addMemberRow(part = '', name = '') {
       const row = document.createElement('div');
       row.className = 'flex items-center gap-2 member-row';
@@ -224,7 +231,7 @@
 
     addMemberRowBtn.addEventListener('click', () => addMemberRow('', ''));
 
-    // 保存処理（新規登録 or 更新）
+    // 保存
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const submitBtn = document.getElementById('submit-btn');
@@ -250,10 +257,8 @@
 
       try {
         if (bandId) {
-          // IDに基づく更新処理
           await updateDoc(doc(db, 'bands', bandId), payload);
         } else {
-          // 新規登録
           payload.createdAt = serverTimestamp();
           await addDoc(collection(db, 'bands'), payload);
         }
@@ -267,7 +272,7 @@
       }
     });
 
-    // 削除処理
+    // 削除
     deleteBtn.addEventListener('click', async () => {
       const bandId = editBandIdInput.value;
       if (!bandId) return;
@@ -308,6 +313,7 @@
         const data = docSnap.data();
         bandsCache.set(bandId, data);
 
+        const univColor = getUnivColor(data.university);
         const members = data.members || [];
         const memberTagsHtml = members.map(m => `
           <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg text-xs font-medium">
@@ -326,7 +332,8 @@
             </td>
             <td class="px-6 py-4 font-bold text-slate-800">${data.name}</td>
             <td class="px-6 py-4">
-              <span class="inline-block px-2.5 py-1 bg-slate-50 text-slate-600 border border-slate-200/60 rounded-lg text-xs font-medium">
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold" style="background-color: ${univColor}15; color: ${univColor}; border: 1px solid ${univColor}40;">
+                <span class="w-1.5 h-1.5 rounded-full" style="background-color: ${univColor};"></span>
                 ${data.university || '-'}
               </span>
             </td>
@@ -345,14 +352,19 @@
 
         // スマホカード
         cardHtml += `
-          <div class="p-5 space-y-3">
+          <div class="p-5 space-y-3 relative overflow-hidden" style="border-left: 4px solid ${univColor};">
             <div class="flex justify-between items-start">
               <div>
                 <span class="font-mono text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded tracking-wider">
                   ID: ${bandId.slice(0, 6)}
                 </span>
                 <h4 class="font-bold text-slate-800 text-base mt-1">${data.name}</h4>
-                <p class="text-xs text-slate-500 font-medium">${data.university || '-'}</p>
+                <div class="mt-1">
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold" style="background-color: ${univColor}15; color: ${univColor}; border: 1px solid ${univColor}40;">
+                    <span class="w-1.5 h-1.5 rounded-full" style="background-color: ${univColor};"></span>
+                    ${data.university || '-'}
+                  </span>
+                </div>
               </div>
               <button data-id="${bandId}" class="edit-btn p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition">
                 <i data-lucide="edit-3" class="w-4 h-4"></i>
@@ -368,7 +380,6 @@
       tableBody.innerHTML = tableHtml;
       cardList.innerHTML = cardHtml;
 
-      // 編集ボタンのイベントバインド
       document.querySelectorAll('.edit-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const id = btn.getAttribute('data-id');
