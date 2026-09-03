@@ -13,10 +13,8 @@
 </head>
 <body class="bg-[#F8FAFC] text-slate-700 min-h-screen flex flex-col md:flex-row antialiased">
 
-  <!-- 共通サイドバー読込用コンテナ -->
   <div id="layout-container" class="contents"></div>
 
-  <!-- バンド管理メインコンテンツ -->
   <main class="flex-1 p-5 sm:p-8 md:p-10 overflow-y-auto">
     <!-- ヘッダー -->
     <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8">
@@ -24,114 +22,196 @@
         <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">バンド管理</h1>
         <p class="text-xs text-slate-400 mt-0.5 sm:mt-1">登録されているバンドの一覧・出演順・メンバーの確認</p>
       </div>
-      <button class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-2xl shadow-sm transition self-start sm:self-auto">
+      <button id="open-modal-btn" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-2xl shadow-sm transition self-start sm:self-auto">
         <i data-lucide="plus" class="w-4 h-4"></i>
         バンド新規登録
       </button>
     </header>
 
-    <!-- 検索・フィルターバー -->
-    <div class="bg-white rounded-2xl p-3 border border-slate-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.02)] mb-6 flex flex-col sm:flex-row gap-3">
-      <div class="relative flex-1">
-        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
-        <input type="text" placeholder="バンド名やメンバー名で検索..." class="w-full pl-10 pr-4 py-2 text-sm bg-slate-50/70 border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-700 placeholder-slate-400">
-      </div>
-      <div class="flex gap-2">
-        <select class="px-3 py-2 text-sm bg-slate-50/70 text-slate-600 rounded-xl focus:outline-none border-none">
-          <option>すべてのステータス</option>
-          <option>確定済み</option>
-          <option>調整中</option>
-        </select>
-      </div>
-    </div>
-
     <!-- バンド一覧テーブル/カード -->
     <div class="bg-white rounded-3xl border border-slate-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.02)] overflow-hidden">
       <div class="p-5 border-b border-slate-100 flex items-center justify-between">
         <span class="text-sm font-bold text-slate-800">登録バンド一覧</span>
-        <span class="text-xs text-slate-400 font-medium">合計 3 件</span>
+        <span id="band-count" class="text-xs text-slate-400 font-medium">合計 0 件</span>
       </div>
 
-      <!-- テーブル（PC・タブレット向け） -->
+      <!-- PC向けテーブル -->
       <div class="overflow-x-auto hidden sm:block">
         <table class="w-full text-left text-sm text-slate-600">
           <thead class="bg-slate-50/60 text-xs text-slate-400 uppercase tracking-wider border-b border-slate-100">
             <tr>
               <th class="px-6 py-4">バンド名</th>
-              <th class="px-6 py-4">ジャンル / コピー元</th>
+              <th class="px-6 py-4">ジャンル</th>
               <th class="px-6 py-4">人数</th>
+              <th class="px-6 py-4">代表者</th>
               <th class="px-6 py-4">ステータス</th>
-              <th class="px-6 py-4 text-right">アクション</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100">
-            <tr class="hover:bg-slate-50/50 transition">
-              <td class="px-6 py-4 font-semibold text-slate-800">The Neon Lights</td>
-              <td class="px-6 py-4 text-slate-500">邦ロック / オリジナル</td>
-              <td class="px-6 py-4">4名</td>
-              <td class="px-6 py-4">
-                <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-50 text-emerald-600">確定済み</span>
-              </td>
-              <td class="px-6 py-4 text-right">
-                <button class="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition">
-                  <i data-lucide="more-horizontal" class="w-4 h-4"></i>
-                </button>
-              </td>
-            </tr>
-            <tr class="hover:bg-slate-50/50 transition">
-              <td class="px-6 py-4 font-semibold text-slate-800">Midnight Echoes</td>
-              <td class="px-6 py-4 text-slate-500">オルタナティブ</td>
-              <td class="px-6 py-4">5名</td>
-              <td class="px-6 py-4">
-                <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-50 text-emerald-600">確定済み</span>
-              </td>
-              <td class="px-6 py-4 text-right">
-                <button class="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition">
-                  <i data-lucide="more-horizontal" class="w-4 h-4"></i>
-                </button>
-              </td>
-            </tr>
-            <tr class="hover:bg-slate-50/50 transition">
-              <td class="px-6 py-4 font-semibold text-slate-800">Blue Horizon</td>
-              <td class="px-6 py-4 text-slate-500">ポップス</td>
-              <td class="px-6 py-4">3名</td>
-              <td class="px-6 py-4">
-                <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-amber-50 text-amber-600">調整中</span>
-              </td>
-              <td class="px-6 py-4 text-right">
-                <button class="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition">
-                  <i data-lucide="more-horizontal" class="w-4 h-4"></i>
-                </button>
-              </td>
+          <tbody id="band-table-body" class="divide-y divide-slate-100">
+            <tr>
+              <td colspan="5" class="text-center py-10 text-slate-400 text-sm">読み込み中...</td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <!-- スマホ向けカード表示 -->
-      <div class="sm:hidden divide-y divide-slate-100">
-        <div class="p-4 space-y-2">
-          <div class="flex justify-between items-start">
-            <div>
-              <p class="font-bold text-slate-800">The Neon Lights</p>
-              <p class="text-xs text-slate-400">邦ロック / 4名</p>
-            </div>
-            <span class="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-emerald-50 text-emerald-600">確定済み</span>
-          </div>
-        </div>
-        <div class="p-4 space-y-2">
-          <div class="flex justify-between items-start">
-            <div>
-              <p class="font-bold text-slate-800">Midnight Echoes</p>
-              <p class="text-xs text-slate-400">オルタナティブ / 5名</p>
-            </div>
-            <span class="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-emerald-50 text-emerald-600">確定済み</span>
-          </div>
-        </div>
+      <!-- モバイル向けカード -->
+      <div id="band-card-list" class="sm:hidden divide-y divide-slate-100">
+        <div class="p-6 text-center text-slate-400 text-sm">読み込み中...</div>
       </div>
     </div>
   </main>
 
+  <!-- 新規登録モーダル -->
+  <div id="modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-xl">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-lg font-bold text-slate-800">バンド新規登録</h3>
+        <button id="close-modal-btn" class="p-1 rounded-lg text-slate-400 hover:bg-slate-100 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="add-band-form" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 mb-1">バンド名 <span class="text-rose-500">*</span></label>
+          <input type="text" id="band-name" required placeholder="例: The Neon Lights" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 mb-1">ジャンル / コピー元</label>
+          <input type="text" id="band-genre" placeholder="例: 邦ロック / Vaundy" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">構成人数</label>
+            <input type="number" id="band-members" min="1" value="4" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">ステータス</label>
+            <select id="band-status" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+              <option value="confirmed">確定済み</option>
+              <option value="pending">調整中</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 mb-1">代表者 / 連絡先</label>
+          <input type="text" id="band-contact" placeholder="例: 山田太郎" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+        </div>
+
+        <div class="pt-4 flex gap-3">
+          <button type="button" id="cancel-btn" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-sm font-semibold transition">キャンセル</button>
+          <button type="submit" id="submit-btn" class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition">登録する</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="layout.js"></script>
+
+  <!-- Firestore連携スクリプト -->
+  <script type="module">
+    import { db, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from './firebase-config.js';
+
+    // モーダル開閉制御
+    const modal = document.getElementById('modal');
+    const openModalBtn = document.getElementById('open-modal-btn');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+    const cancelBtn = document.getElementById('cancel-btn');
+    const form = document.getElementById('add-band-form');
+
+    const toggleModal = (show) => {
+      modal.classList.toggle('hidden', !show);
+      if (window.lucide) window.lucide.createIcons();
+    };
+
+    openModalBtn.addEventListener('click', () => toggleModal(true));
+    closeModalBtn.addEventListener('click', () => toggleModal(false));
+    cancelBtn.addEventListener('click', () => toggleModal(false));
+
+    // バンド追加処理
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = document.getElementById('submit-btn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = '登録中...';
+
+      try {
+        await addDoc(collection(db, 'bands'), {
+          name: document.getElementById('band-name').value,
+          genre: document.getElementById('band-genre').value || '未設定',
+          memberCount: Number(document.getElementById('band-members').value || 1),
+          status: document.getElementById('band-status').value,
+          contact: document.getElementById('band-contact').value || '未設定',
+          createdAt: serverTimestamp()
+        });
+
+        form.reset();
+        toggleModal(false);
+      } catch (err) {
+        console.error("Error adding document: ", err);
+        alert('登録に失敗しました。Firestoreのセキュリティルールなどを確認してください。');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '登録する';
+      }
+    });
+
+    // リアルタイム一覧取得・表示
+    const q = query(collection(db, 'bands'), orderBy('createdAt', 'desc'));
+
+    onSnapshot(q, (snapshot) => {
+      const tableBody = document.getElementById('band-table-body');
+      const cardList = document.getElementById('band-card-list');
+      const countLabel = document.getElementById('band-count');
+
+      countLabel.textContent = `合計 ${snapshot.size} 件`;
+
+      if (snapshot.empty) {
+        tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-slate-400 text-sm">登録されたバンドがありません。「バンド新規登録」から追加してください。</td></tr>`;
+        cardList.innerHTML = `<div class="p-6 text-center text-slate-400 text-sm">登録されたバンドがありません。</div>`;
+        return;
+      }
+
+      let tableHtml = '';
+      let cardHtml = '';
+
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        const isConfirmed = data.status === 'confirmed';
+        const badgeClass = isConfirmed ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600';
+        const statusText = isConfirmed ? '確定済み' : '調整中';
+
+        // PCテーブル用
+        tableHtml += `
+          <tr class="hover:bg-slate-50/50 transition">
+            <td class="px-6 py-4 font-semibold text-slate-800">${data.name}</td>
+            <td class="px-6 py-4 text-slate-500">${data.genre || '-'}</td>
+            <td class="px-6 py-4">${data.memberCount}名</td>
+            <td class="px-6 py-4 text-slate-500">${data.contact || '-'}</td>
+            <td class="px-6 py-4">
+              <span class="px-2.5 py-1 text-xs font-semibold rounded-full ${badgeClass}">${statusText}</span>
+            </td>
+          </tr>
+        `;
+
+        // スマホカード用
+        cardHtml += `
+          <div class="p-4 space-y-2">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="font-bold text-slate-800">${data.name}</p>
+                <p class="text-xs text-slate-400">${data.genre || '-'} / ${data.memberCount}名</p>
+              </div>
+              <span class="px-2 py-0.5 text-[11px] font-semibold rounded-full ${badgeClass}">${statusText}</span>
+            </div>
+          </div>
+        `;
+      });
+
+      tableBody.innerHTML = tableHtml;
+      cardList.innerHTML = cardHtml;
+    });
+  </script>
 </body>
 </html>
