@@ -41,7 +41,7 @@
           <thead class="bg-slate-50/60 text-xs text-slate-400 uppercase tracking-wider border-b border-slate-100">
             <tr>
               <th class="px-6 py-4 w-1/4">バンド名</th>
-              <th class="px-6 py-4 w-1/5">大学名</th>
+              <th class="px-6 py-4 w-1/4">大学・団体名</th>
               <th class="px-6 py-4">メンバー構成 (パート・名前)</th>
             </tr>
           </thead>
@@ -77,10 +77,16 @@
           <input type="text" id="band-name" required placeholder="例: The Neon Lights" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-800">
         </div>
 
-        <!-- 大学名 -->
+        <!-- 大学名（プルダウン式） -->
         <div>
           <label class="block text-xs font-semibold text-slate-500 mb-1.5">大学名 <span class="text-rose-500">*</span></label>
-          <input type="text" id="band-university" required placeholder="例: 〇〇大学" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-800">
+          <select id="band-university" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-800">
+            <option value="" disabled selected>大学・団体を選択してください</option>
+            <option value="愛知学院大学">愛知学院大学</option>
+            <option value="名古屋商科大学 軽音学部">名古屋商科大学 軽音学部</option>
+            <option value="愛知教育大学 軽音学部">愛知教育大学 軽音学部</option>
+            <option value="中京大学 サウンドコミュニケーション">中京大学 サウンドコミュニケーション</option>
+          </select>
         </div>
 
         <!-- パートと名前（複数追加可能） -->
@@ -94,7 +100,7 @@
           </div>
 
           <div id="members-container" class="space-y-2">
-            <!-- メンバー行はJSで動的追加されます -->
+            <!-- JSで動的に追加されます -->
           </div>
         </div>
 
@@ -120,11 +126,10 @@
     const membersContainer = document.getElementById('members-container');
     const addMemberRowBtn = document.getElementById('add-member-row-btn');
 
-    // モーダル開閉
+    // モーダル開閉制御
     const toggleModal = (show) => {
       modal.classList.toggle('hidden', !show);
       if (show) {
-        // 開いた時に空行がなければデフォルトで1行追加
         if (membersContainer.children.length === 0) {
           addMemberRow('Vo.', '');
           addMemberRow('Gt.', '');
@@ -139,7 +144,7 @@
     closeModalBtn.addEventListener('click', () => toggleModal(false));
     cancelBtn.addEventListener('click', () => toggleModal(false));
 
-    // パート・名前入力行の追加
+    // メンバー入力行追加
     function addMemberRow(defaultPart = 'Gt.', defaultName = '') {
       const row = document.createElement('div');
       row.className = 'flex items-center gap-2 member-row';
@@ -165,14 +170,13 @@
 
     addMemberRowBtn.addEventListener('click', () => addMemberRow('', ''));
 
-    // バンド登録処理
+    // バンド登録送信処理
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const submitBtn = document.getElementById('submit-btn');
       submitBtn.disabled = true;
       submitBtn.textContent = '登録中...';
 
-      // メンバー配列の作成
       const memberRows = membersContainer.querySelectorAll('.member-row');
       const members = [];
       memberRows.forEach(row => {
@@ -186,9 +190,9 @@
       try {
         await addDoc(collection(db, 'bands'), {
           name: document.getElementById('band-name').value.trim(),
-          university: document.getElementById('band-university').value.trim(),
+          university: document.getElementById('band-university').value,
           members: members,
-          memberCount: members.length, // ダッシュボード集計用
+          memberCount: members.length,
           createdAt: serverTimestamp()
         });
 
@@ -227,7 +231,6 @@
         const data = doc.data();
         const members = data.members || [];
 
-        // メンバーバッジの生成 (例: [Vo. 山田] [Gt. 田中])
         const memberTagsHtml = members.map(m => `
           <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg text-xs font-medium">
             <span class="font-bold text-blue-600">${m.part}</span>
@@ -235,11 +238,15 @@
           </span>
         `).join('');
 
-        // PC向けテーブル
+        // PCテーブル
         tableHtml += `
           <tr class="hover:bg-slate-50/50 transition align-top">
             <td class="px-6 py-4 font-bold text-slate-800">${data.name}</td>
-            <td class="px-6 py-4 text-slate-600">${data.university || '-'}</td>
+            <td class="px-6 py-4 text-slate-600">
+              <span class="inline-block px-2.5 py-1 bg-slate-50 text-slate-600 border border-slate-200/60 rounded-lg text-xs font-medium">
+                ${data.university || '-'}
+              </span>
+            </td>
             <td class="px-6 py-4">
               <div class="flex flex-wrap gap-1.5">
                 ${memberTagsHtml || '<span class="text-xs text-slate-400">未登録</span>'}
@@ -248,12 +255,16 @@
           </tr>
         `;
 
-        // スマホ向けカード
+        // スマホカード
         cardHtml += `
           <div class="p-5 space-y-3">
             <div>
-              <h4 class="font-bold text-slate-800 text-base">${data.name}</h4>
-              <p class="text-xs text-slate-400 font-medium mt-0.5">${data.university || '大学未設定'}</p>
+              <div class="flex justify-between items-start gap-2 mb-1">
+                <h4 class="font-bold text-slate-800 text-base">${data.name}</h4>
+                <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[11px] font-medium shrink-0">
+                  ${data.university || '大学未設定'}
+                </span>
+              </div>
             </div>
             <div class="flex flex-wrap gap-1.5">
               ${memberTagsHtml || '<span class="text-xs text-slate-400">未登録</span>'}
