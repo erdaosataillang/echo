@@ -10,7 +10,6 @@
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap');
     body { font-family: 'Inter', 'Noto Sans JP', sans-serif; }
     
-    /* ドラッグ時の視覚エフェクト */
     .dragging {
       opacity: 0.4;
       border-color: #3b82f6 !important;
@@ -26,7 +25,7 @@
     <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8">
       <div>
         <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">バンド管理</h1>
-        <p class="text-xs text-slate-400 mt-0.5 sm:mt-1">登録バンドの出演管理・セットリスト並べ替え（曲／MC）</p>
+        <p class="text-xs text-slate-400 mt-0.5 sm:mt-1">登録バンドの出演管理・セットリスト並べ替え（曲／MC／オリジナル曲）</p>
       </div>
       <button id="open-create-modal-btn" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-2xl shadow-sm transition self-start sm:self-auto">
         <i data-lucide="plus" class="w-4 h-4"></i>
@@ -61,7 +60,7 @@
         </table>
       </div>
 
-      <!-- モバイル・タブレット向けカード表示 -->
+      <!-- モバイル向けカード表示 -->
       <div id="band-card-list" class="lg:hidden divide-y divide-slate-100">
         <div class="p-6 text-center text-slate-400 text-sm">読み込み中...</div>
       </div>
@@ -105,17 +104,17 @@
           <div class="flex items-center justify-between mb-2">
             <div>
               <label class="block text-xs font-bold text-slate-700">セットリスト (曲 / MC)</label>
-              <p class="text-[11px] text-slate-400">ドラッグまたは上下矢印ボタンで演奏順を変更できます</p>
+              <p class="text-[11px] text-slate-400">Apple Music検索・手動追加・MC追加が可能です</p>
             </div>
             <span id="total-duration-display" class="text-xs font-semibold px-2.5 py-0.5 bg-blue-50 text-blue-600 rounded-full">
               合計 00:00
             </span>
           </div>
 
-          <!-- 検索バー・MC追加 -->
+          <!-- 検索バー・手動追加・MC追加ボタン -->
           <div class="space-y-2 mb-3">
-            <div class="flex gap-2">
-              <div class="relative flex-1">
+            <div class="flex flex-wrap gap-2">
+              <div class="relative flex-1 min-w-[180px]">
                 <i data-lucide="music" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
                 <input type="text" id="music-search-input" placeholder="曲名やアーティスト名で検索..." class="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-800">
               </div>
@@ -123,13 +122,45 @@
                 <i data-lucide="search" class="w-3.5 h-3.5"></i>
                 検索
               </button>
+              <!-- 手動追加ボタン -->
+              <button type="button" id="open-custom-song-btn" class="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/60 rounded-xl text-xs font-semibold transition shrink-0 flex items-center gap-1.5">
+                <i data-lucide="plus-circle" class="w-3.5 h-3.5 text-indigo-600"></i>
+                + 手動追加
+              </button>
+              <!-- MC追加ボタン -->
               <button type="button" id="add-mc-btn" class="px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200/60 rounded-xl text-xs font-semibold transition shrink-0 flex items-center gap-1.5">
                 <i data-lucide="mic" class="w-3.5 h-3.5 text-amber-600"></i>
                 + MC追加
               </button>
             </div>
 
+            <!-- Apple Music検索結果ボックス -->
             <div id="search-results-box" class="hidden bg-white border border-slate-200 rounded-2xl shadow-lg max-h-48 overflow-y-auto divide-y divide-slate-100 p-1"></div>
+
+            <!-- 手動追加フォーム（トグル表示） -->
+            <div id="custom-song-form" class="hidden bg-indigo-50/50 border border-indigo-100 rounded-2xl p-3 space-y-2.5">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-indigo-900 flex items-center gap-1.5">
+                  <i data-lucide="edit-3" class="w-3.5 h-3.5 text-indigo-600"></i>
+                  手動で曲を追加 (オリジナル曲・SE等)
+                </span>
+                <button type="button" id="close-custom-song-btn" class="text-slate-400 hover:text-slate-600 text-xs">
+                  閉じる
+                </button>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <input type="text" id="custom-song-title" placeholder="曲名 (必須)" class="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-800">
+                <input type="text" id="custom-song-artist" placeholder="アーティスト名 (任意)" class="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-800">
+                <div class="flex gap-1.5 items-center">
+                  <input type="number" id="custom-song-min" min="0" max="60" placeholder="分" class="w-14 px-2 py-1.5 bg-white border border-slate-200 rounded-xl text-xs text-center focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-800">
+                  <span class="text-xs text-slate-400 font-bold">:</span>
+                  <input type="number" id="custom-song-sec" min="0" max="59" placeholder="秒" class="w-14 px-2 py-1.5 bg-white border border-slate-200 rounded-xl text-xs text-center focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-800">
+                  <button type="button" id="submit-custom-song-btn" class="flex-1 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold transition shadow-sm">
+                    追加
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- 並べ替え可能なセットリストコンテナ -->
@@ -252,6 +283,89 @@
     const emptySongsHint = document.getElementById('empty-songs-hint');
     const totalDurationDisplay = document.getElementById('total-duration-display');
 
+    // 手動追加フォーム関連
+    const openCustomSongBtn = document.getElementById('open-custom-song-btn');
+    const closeCustomSongBtn = document.getElementById('close-custom-song-btn');
+    const customSongForm = document.getElementById('custom-song-form');
+    const customSongTitle = document.getElementById('custom-song-title');
+    const customSongArtist = document.getElementById('custom-song-artist');
+    const customSongMin = document.getElementById('custom-song-min');
+    const customSongSec = document.getElementById('custom-song-sec');
+    const submitCustomSongBtn = document.getElementById('submit-custom-song-btn');
+
+    openCustomSongBtn.addEventListener('click', () => {
+      customSongForm.classList.toggle('hidden');
+      if (!customSongForm.classList.contains('hidden')) {
+        customSongTitle.focus();
+      }
+    });
+
+    closeCustomSongBtn.addEventListener('click', () => {
+      customSongForm.classList.add('hidden');
+    });
+
+    // 手動追加処理
+    submitCustomSongBtn.addEventListener('click', async () => {
+      const title = customSongTitle.value.trim();
+      const artist = customSongArtist.value.trim() || 'Original';
+      const min = parseInt(customSongMin.value || '0', 10);
+      const sec = parseInt(customSongSec.value || '0', 10);
+
+      if (!title) {
+        alert('曲名を入力してください。');
+        return;
+      }
+
+      if (min === 0 && sec === 0) {
+        alert('分または秒を入力してください。');
+        return;
+      }
+
+      const totalMs = (min * 60 + sec) * 1000;
+      const durationStr = `${min}:${String(sec).padStart(2, '0')}`;
+
+      submitCustomSongBtn.disabled = true;
+      submitCustomSongBtn.textContent = '追加中...';
+
+      try {
+        const docRef = await addDoc(collection(db, 'songs'), {
+          title: title,
+          artist: artist,
+          duration: durationStr,
+          durationMs: totalMs,
+          isMC: false,
+          isCustom: true,
+          createdAt: serverTimestamp()
+        });
+
+        const newId = docRef.id;
+        songsCache.set(newId, {
+          title: title,
+          artist: artist,
+          duration: durationStr,
+          durationMs: totalMs,
+          isMC: false,
+          isCustom: true
+        });
+
+        currentSelectedSongIds.push(newId);
+        renderSelectedSongsInModal();
+
+        // フォームリセット
+        customSongTitle.value = '';
+        customSongArtist.value = '';
+        customSongMin.value = '';
+        customSongSec.value = '';
+        customSongForm.classList.add('hidden');
+      } catch (err) {
+        console.error('Custom song save error:', err);
+        alert('曲の追加に失敗しました。');
+      } finally {
+        submitCustomSongBtn.disabled = false;
+        submitCustomSongBtn.textContent = '追加';
+      }
+    });
+
     function updateCuePreview(url) {
       if (url) {
         cuePreviewImg.src = url;
@@ -318,7 +432,7 @@
     }
     addMemberRowBtn.addEventListener('click', () => addMemberRow('', ''));
 
-    // --- Apple Music 検索 ---
+    // Apple Music 検索
     async function searchAppleMusic() {
       const term = musicSearchInput.value.trim();
       if (!term) return;
@@ -368,6 +482,7 @@
         });
 
       } catch (err) {
+        console.error('Search API Error:', err);
         searchResultsBox.innerHTML = '<div class="p-3 text-xs text-rose-500 text-center">検索エラーが発生しました</div>';
       } finally {
         musicSearchBtn.disabled = false;
@@ -395,6 +510,7 @@
         duration: durationStr,
         durationMs: track.trackTimeMillis,
         isMC: false,
+        isCustom: false,
         artworkUrl: track.artworkUrl60 || '',
         createdAt: serverTimestamp()
       });
@@ -406,6 +522,7 @@
         duration: durationStr,
         durationMs: track.trackTimeMillis,
         isMC: false,
+        isCustom: false,
         artworkUrl: track.artworkUrl60 || ''
       });
 
@@ -413,7 +530,7 @@
       renderSelectedSongsInModal();
     }
 
-    // --- MC追加 ---
+    // MC追加
     addMcBtn.addEventListener('click', async () => {
       const minutesInput = prompt('MCの時間（分数）を入力してください (例: 2 または 3):', '3');
       if (minutesInput === null) return;
@@ -449,7 +566,6 @@
       renderSelectedSongsInModal();
     });
 
-    // --- 順序入れ替えヘルパー関数 ---
     function moveSong(fromIdx, toIdx) {
       if (toIdx < 0 || toIdx >= currentSelectedSongIds.length) return;
       const movedItem = currentSelectedSongIds.splice(fromIdx, 1)[0];
@@ -457,7 +573,7 @@
       renderSelectedSongsInModal();
     }
 
-    // --- モーダル内セットリスト描画 (D&D + 矢印ボタン) ---
+    // モーダル内セットリスト描画
     function renderSelectedSongsInModal() {
       if (currentSelectedSongIds.length === 0) {
         emptySongsHint.classList.remove('hidden');
@@ -476,24 +592,27 @@
 
         const chip = document.createElement('div');
         const isMc = item.isMC === true;
+        const isCustom = item.isCustom === true;
 
         chip.className = `selected-song-chip flex items-center justify-between p-2.5 px-3 rounded-2xl text-xs transition select-none cursor-grab active:cursor-grabbing border ${
           isMc 
             ? 'bg-amber-50/80 border-amber-200 text-amber-900 shadow-sm' 
-            : 'bg-white border-slate-200/80 text-slate-800 shadow-sm'
+            : isCustom
+              ? 'bg-indigo-50/50 border-indigo-200 text-slate-800 shadow-sm'
+              : 'bg-white border-slate-200/80 text-slate-800 shadow-sm'
         }`;
         chip.setAttribute('draggable', 'true');
         chip.setAttribute('data-index', index);
 
         chip.innerHTML = `
           <div class="flex items-center gap-2.5 min-w-0">
-            <!-- ドラッグハンドルアイコン -->
             <span class="cursor-grab text-slate-300 hover:text-slate-500">
               <i data-lucide="grip-vertical" class="w-4 h-4"></i>
             </span>
             <span class="w-5 text-center font-mono font-bold ${isMc ? 'text-amber-600' : 'text-slate-400'} text-xs">${index + 1}.</span>
             <div class="truncate flex items-center gap-1.5">
               ${isMc ? '<i data-lucide="mic" class="w-3.5 h-3.5 text-amber-600 shrink-0"></i>' : ''}
+              ${isCustom ? '<span class="px-1.5 py-0.2 bg-indigo-100 text-indigo-700 rounded text-[10px] font-semibold shrink-0">手動</span>' : ''}
               <span class="font-bold ${isMc ? 'text-amber-800' : 'text-slate-800'} truncate">${item.title}</span>
               ${!isMc ? `<span class="text-slate-400 text-[11px] truncate">/ ${item.artist}</span>` : ''}
             </div>
@@ -501,22 +620,18 @@
           <div class="flex items-center gap-1 shrink-0 ml-2">
             <span class="font-mono font-medium mr-1 ${isMc ? 'text-amber-600' : 'text-slate-500'}">${item.duration}</span>
             
-            <!-- 上へボタン -->
             <button type="button" data-idx="${index}" class="move-up-btn p-1 text-slate-400 hover:text-blue-600 rounded hover:bg-slate-100 transition ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}" title="上へ移動">
               <i data-lucide="chevron-up" class="w-3.5 h-3.5"></i>
             </button>
-            <!-- 下へボタン -->
             <button type="button" data-idx="${index}" class="move-down-btn p-1 text-slate-400 hover:text-blue-600 rounded hover:bg-slate-100 transition ${index === currentSelectedSongIds.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}" title="下へ移動">
               <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
             </button>
-            <!-- 削除ボタン -->
             <button type="button" data-idx="${index}" class="remove-song-chip-btn p-1 text-slate-400 hover:text-rose-500 rounded hover:bg-slate-100 transition ml-0.5" title="削除">
               <i data-lucide="x" class="w-3.5 h-3.5"></i>
             </button>
           </div>
         `;
 
-        // 上下移動ボタンイベント
         chip.querySelector('.move-up-btn').addEventListener('click', (e) => {
           e.stopPropagation();
           const idx = Number(e.currentTarget.getAttribute('data-idx'));
@@ -529,7 +644,6 @@
           moveSong(idx, idx + 1);
         });
 
-        // 削除ボタンイベント
         chip.querySelector('.remove-song-chip-btn').addEventListener('click', (e) => {
           e.stopPropagation();
           const idx = Number(e.currentTarget.getAttribute('data-idx'));
@@ -537,7 +651,6 @@
           renderSelectedSongsInModal();
         });
 
-        // --- Drag & Drop イベント ---
         chip.addEventListener('dragstart', (e) => {
           chip.classList.add('dragging');
           e.dataTransfer.effectAllowed = 'move';
@@ -569,7 +682,6 @@
       if (window.lucide) window.lucide.createIcons();
     }
 
-    // --- モーダル制御 ---
     function openModalForCreate() {
       editBandIdInput.value = '';
       modalTitle.textContent = 'バンド新規登録';
@@ -577,6 +689,7 @@
       form.reset();
       updateCuePreview('');
       searchResultsBox.classList.add('hidden');
+      customSongForm.classList.add('hidden');
       currentSelectedSongIds = [];
       renderSelectedSongsInModal();
 
@@ -598,6 +711,7 @@
       modalTitle.textContent = 'バンド情報の編集';
       deleteBtn.classList.remove('hidden');
       searchResultsBox.classList.add('hidden');
+      customSongForm.classList.add('hidden');
 
       document.getElementById('band-name').value = data.name || '';
       document.getElementById('band-university').value = data.university || '';
@@ -626,7 +740,6 @@
     closeModalBtn.addEventListener('click', closeModal);
     cancelBtn.addEventListener('click', closeModal);
 
-    // 保存
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const submitBtn = document.getElementById('submit-btn');
@@ -648,7 +761,7 @@
         cueSheetUrl: cueUrlInput.value.trim() || '',
         members: members,
         memberCount: members.length,
-        songIds: currentSelectedSongIds, // 並べ替えた順番の配列
+        songIds: currentSelectedSongIds,
         updatedAt: serverTimestamp()
       };
 
@@ -668,7 +781,6 @@
       }
     });
 
-    // 削除
     deleteBtn.addEventListener('click', async () => {
       const bandId = editBandIdInput.value;
       if (!bandId) return;
@@ -682,7 +794,6 @@
       }
     });
 
-    // 一覧同期と描画
     const q = query(collection(db, 'bands'), orderBy('createdAt', 'desc'));
     onSnapshot(q, (snapshot) => {
       bandsCache.clear();
@@ -718,21 +829,28 @@
           </span>
         `).join('');
 
-        // セットリスト一覧のHTML生成（曲順番号つき）
         const songIds = data.songIds || [];
         let totalMs = 0;
         const setlistHtml = songIds.length > 0 ? `
           <div class="space-y-1">
             <div class="flex flex-wrap gap-1.5">
               ${songIds.map((sid, idx) => {
-                const item = songsCache.get(sid) || { title: '未取得', artist: '', duration: '0:00', durationMs: 0, isMC: false };
+                const item = songsCache.get(sid) || { title: '未取得', artist: '', duration: '0:00', durationMs: 0, isMC: false, isCustom: false };
                 totalMs += Number(item.durationMs || 0);
                 const isMc = item.isMC === true;
+                const isCustom = item.isCustom === true;
 
                 return `
-                  <div class="inline-flex items-center gap-1.5 px-2.5 py-1 ${isMc ? 'bg-amber-50/80 border-amber-200 text-amber-900' : 'bg-slate-50 border-slate-200/70 text-slate-700'} border rounded-lg text-xs">
+                  <div class="inline-flex items-center gap-1.5 px-2.5 py-1 ${
+                    isMc 
+                      ? 'bg-amber-50/80 border-amber-200 text-amber-900' 
+                      : isCustom 
+                        ? 'bg-indigo-50/60 border-indigo-200 text-indigo-950' 
+                        : 'bg-slate-50 border-slate-200/70 text-slate-700'
+                  } border rounded-lg text-xs">
                     <span class="font-mono ${isMc ? 'text-amber-500' : 'text-slate-400'} font-bold">${idx + 1}.</span>
                     ${isMc ? '<i data-lucide="mic" class="w-3 h-3 text-amber-600"></i>' : ''}
+                    ${isCustom ? '<span class="text-[10px] px-1 py-0.2 bg-indigo-100 text-indigo-700 rounded font-semibold">手動</span>' : ''}
                     <span class="font-semibold">${item.title}</span>
                     <span class="${isMc ? 'text-amber-600' : 'text-slate-400'}">(${item.duration})</span>
                   </div>
