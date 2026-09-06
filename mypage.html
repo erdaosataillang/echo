@@ -207,11 +207,38 @@
           </div>
         </div>
 
-        <!-- 4. Cueシート / 舞台演出要望 -->
-        <div class="space-y-1.5">
-          <label class="block font-bold text-slate-700">Cueシート・PA/照明への要望</label>
-          <textarea id="edit-cuesheet" rows="4" placeholder="例:&#10;・1曲目サビ前で赤照明メインに切り替え&#10;・2曲目終わりのMCで客電点灯&#10;・ラスト曲のイントロでドラムカウント後に白フラッシュ" class="w-full p-3 bg-[#FAF8FD] border border-purple-100 rounded-xl text-xs focus:ring-2 focus:ring-[#B870DE]/20 focus:border-[#B870DE] text-slate-800 transition leading-relaxed"></textarea>
-          <p class="text-[10px] text-slate-400">照明イメージ、マイク本数の増減、MCタイミングなど裏方部へ伝えたい要望をご記入ください</p>
+        <!-- 4. Cueシート（画像アップロード ＆ プレビュー） -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="block font-bold text-slate-700">Cueシート（画像）</label>
+            <span id="cuesheet-status-badge" class="text-[10px] font-bold text-slate-400">未登録</span>
+          </div>
+
+          <!-- プレビュー表示エリア -->
+          <div id="cuesheet-preview-box" class="hidden relative rounded-2xl overflow-hidden border border-purple-100 bg-slate-900 group aspect-[16/9] flex items-center justify-center">
+            <img id="cuesheet-preview-img" src="" alt="Cueシートプレビュー" class="w-full h-full object-contain">
+            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
+              <a id="cuesheet-view-link" href="#" target="_blank" rel="noopener noreferrer" class="p-2 rounded-xl bg-white/20 hover:bg-white/40 text-white backdrop-blur-md transition" title="拡大表示">
+                <i data-lucide="external-link" class="w-4 h-4"></i>
+              </a>
+              <button type="button" id="cuesheet-remove-btn" class="p-2 rounded-xl bg-rose-500/80 hover:bg-rose-500 text-white backdrop-blur-md transition" title="画像を削除">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- ファイルドロップ / 選択ボックス -->
+          <label id="cuesheet-upload-dropzone" class="flex flex-col items-center justify-center p-4 border-2 border-dashed border-purple-200 hover:border-[#B870DE] bg-[#FAF8FD] rounded-2xl cursor-pointer transition active:scale-[0.99] group">
+            <div class="w-10 h-10 rounded-full bg-purple-50 group-hover:bg-purple-100 text-[#B870DE] flex items-center justify-center mb-1.5 transition">
+              <i data-lucide="upload-cloud" class="w-5 h-5"></i>
+            </div>
+            <span class="font-bold text-slate-700 text-xs">タップしてCueシート画像を選択</span>
+            <span class="text-[10px] text-slate-400 mt-0.5">PNG, JPG, WEBP (最大 10MB)</span>
+            <input type="file" id="cuesheet-file-input" accept="image/*" class="hidden">
+          </label>
+
+          <!-- 隠しフィールド：保持中のURL -->
+          <input type="hidden" id="edit-cuesheet-url" value="">
         </div>
 
         <!-- アクションボタン -->
@@ -227,8 +254,9 @@
   </div>
 
   <script type="module">
-    import { db, auth, doc, getDoc, updateDoc } from '/admin/firebase-config.js';
+    import { db, auth, storage, doc, getDoc, updateDoc } from '/admin/firebase-config.js';
     import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+    import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-storage.js";
     import { renderPublicNav } from './public-nav.js';
 
     const loadingEl = document.getElementById('mypage-loading');
@@ -517,8 +545,9 @@
             setlistContainer.appendChild(createSongRow('', 1));
           }
 
-          // Cueシート
-          document.getElementById('edit-cuesheet').value = bandData.cueSheetUrl || bandData.cueSheet || '';
+          // Cueシート表示の反映
+          const cueUrl = bandData.cueSheetUrl || (bandData.cueSheet?.startsWith('http') ? bandData.cueSheet : '');
+          setCueSheetPreview(cueUrl);
 
           bandModal.classList.remove('hidden');
           renumberSongs();
@@ -532,6 +561,63 @@
       }
     });
 
+    // Cueシートのプレビュー表示ヘルパー
+    const cuePreviewBox = document.getElementById('cuesheet-preview-box');
+    const cuePreviewImg = document.getElementById('cuesheet-preview-img');
+    const cueViewLink = document.getElementById('cuesheet-view-link');
+    const cueDropzone = document.getElementById('cuesheet-upload-dropzone');
+    const cueUrlInput = document.getElementById('edit-cuesheet-url');
+    const cueStatusBadge = document.getElementById('cuesheet-status-badge');
+    const cueFileInput = document.getElementById('cuesheet-file-input');
+    const cueRemoveBtn = document.getElementById('cuesheet-remove-btn');
+
+    let pendingCueFile = null;
+
+    function setCueSheetPreview(url) {
+      cueUrlInput.value = url || '';
+      pendingCueFile = null;
+      cueFileInput.value = '';
+
+      if (url) {
+        cuePreviewImg.src = url;
+        cueViewLink.href = url;
+        cuePreviewBox.classList.remove('hidden');
+        cueStatusBadge.textContent = '登録済み';
+        cueStatusBadge.className = 'text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full';
+      } else {
+        cuePreviewImg.src = '';
+        cuePreviewBox.classList.add('hidden');
+        cueStatusBadge.textContent = '未登録';
+        cueStatusBadge.className = 'text-[10px] font-bold text-slate-400';
+      }
+    }
+
+    // 画像ファイル選択時（ローカル即時プレビュー）
+    cueFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (file.size > 10 * 1024 * 1024) {
+        alert('画像サイズは10MB以下にしてください。');
+        return;
+      }
+
+      pendingCueFile = file;
+      const objectUrl = URL.createObjectURL(file);
+      cuePreviewImg.src = objectUrl;
+      cueViewLink.href = objectUrl;
+      cuePreviewBox.classList.remove('hidden');
+      cueStatusBadge.textContent = '未保存の画像あり';
+      cueStatusBadge.className = 'text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full';
+      if (window.lucide) window.lucide.createIcons();
+    });
+
+    // 画像削除ボタン
+    cueRemoveBtn.addEventListener('click', () => {
+      setCueSheetPreview('');
+      if (window.lucide) window.lucide.createIcons();
+    });
+
     // バンド情報の保存処理
     bandEditForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -541,34 +627,36 @@
       saveBtn.disabled = true;
       saveBtn.innerHTML = `<span>保存中...</span>`;
 
-      // メンバー配列を行ボックスから直接収集
-      const memberRows = membersContainer.querySelectorAll('.member-row');
-      const membersArr = Array.from(memberRows).map(r => ({
-        part: r.querySelector('.member-part-select').value,
-        name: r.querySelector('.member-name-input').value.trim()
-      })).filter(m => m.name !== '');
-
-      // セットリスト配列
-      const songInputs = setlistContainer.querySelectorAll('input[type="text"]');
-      const setlistArr = Array.from(songInputs).map(inp => inp.value.trim()).filter(Boolean);
-
-      // Cueシート
-      const cueSheetVal = document.getElementById('edit-cuesheet').value.trim();
-      const updateData = {
-        members: membersArr,
-        memberCount: membersArr.length,
-        setlist: setlistArr,
-        updatedAt: new Date()
-      };
-
-      if (cueSheetVal.startsWith('http://') || cueSheetVal.startsWith('https://')) {
-        updateData.cueSheetUrl = cueSheetVal;
-      } else {
-        updateData.cueSheet = cueSheetVal;
-      }
-
       try {
-        await updateDoc(doc(db, 'bands', currentEditingBandId), updateData);
+        // 1. 新しいCueシート画像が選択されている場合はFirebase Storageへアップロード
+        let finalCueSheetUrl = cueUrlInput.value;
+        if (pendingCueFile) {
+          saveBtn.innerHTML = `<span>Cueシートをアップロード中...</span>`;
+          const ext = pendingCueFile.name.split('.').pop() || 'jpg';
+          const fileRef = ref(storage, `cuesheets/${currentEditingBandId}_${Date.now()}.${ext}`);
+          await uploadBytes(fileRef, pendingCueFile);
+          finalCueSheetUrl = await getDownloadURL(fileRef);
+        }
+
+        // 2. メンバー配列
+        const memberRows = membersContainer.querySelectorAll('.member-row');
+        const membersArr = Array.from(memberRows).map(r => ({
+          part: r.querySelector('.member-part-select').value,
+          name: r.querySelector('.member-name-input').value.trim()
+        })).filter(m => m.name !== '');
+
+        // 3. セットリスト配列
+        const songInputs = setlistContainer.querySelectorAll('input[type="text"]');
+        const setlistArr = Array.from(songInputs).map(inp => inp.value.trim()).filter(Boolean);
+
+        // 4. Firestoreへ保存
+        await updateDoc(doc(db, 'bands', currentEditingBandId), {
+          members: membersArr,
+          memberCount: membersArr.length,
+          setlist: setlistArr,
+          cueSheetUrl: finalCueSheetUrl || null,
+          updatedAt: new Date()
+        });
 
         alert('バンド情報を更新しました！');
         closeModal();
