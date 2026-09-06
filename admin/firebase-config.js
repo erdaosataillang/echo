@@ -21,6 +21,7 @@ import {
   isSignInWithEmailLink, 
   signInWithEmailLink 
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import { getStorage } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-storage.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyA6Toofq1A0qDUgJFimU6C0aZuz-L1RuN8",
