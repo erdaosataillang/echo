@@ -2,8 +2,25 @@
 export function renderPublicNav() {
   const currentPath = window.location.pathname.split('/').pop() || 'index.html';
 
-  const isHome = currentPath === 'index.html' || currentPath === '';
-  const isTimetable = currentPath === 'timetable.html';
+  const navItems = [
+    { name: 'ホーム', path: 'index.html', icon: 'home' },
+    { name: 'タイムテーブル', path: 'timetable.html', icon: 'clock' },
+    { name: 'ドリンク', path: 'drink.html', icon: 'glass-water' },
+    { name: 'マイページ', path: 'mypage.html', icon: 'user' },
+  ];
+
+  const navHtml = navItems.map(item => {
+    const isActive = currentPath === item.path || (item.path === 'index.html' && currentPath === '');
+    const activeClass = 'text-blue-600 font-bold';
+    const inactiveClass = 'text-slate-400 hover:text-slate-600 font-medium';
+
+    return `
+      <a href="${item.path}" class="flex flex-col items-center gap-1 transition ${isActive ? activeClass : inactiveClass}">
+        <i data-lucide="${item.icon}" class="w-5 h-5"></i>
+        <span class="text-[10px]">${item.name}</span>
+      </a>
+    `;
+  }).join('');
 
   const navContainer = document.getElementById('public-nav-container');
   if (!navContainer) return;
@@ -20,16 +37,9 @@ export function renderPublicNav() {
       </div>
     </header>
 
-    <!-- モバイル固定ボトムナビ -->
-    <nav class="fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-slate-200/70 py-2 px-6 z-40 flex justify-around items-center max-w-xl mx-auto shadow-[0_-4px_20px_rgba(0,0,0,0.03)]">
-      <a href="index.html" class="flex flex-col items-center gap-1 transition ${isHome ? 'text-blue-600 font-bold' : 'text-slate-400 hover:text-slate-600 font-medium'}">
-        <i data-lucide="home" class="w-5 h-5"></i>
-        <span class="text-[10px]">ホーム</span>
-      </a>
-      <a href="timetable.html" class="flex flex-col items-center gap-1 transition ${isTimetable ? 'text-blue-600 font-bold' : 'text-slate-400 hover:text-slate-600 font-medium'}">
-        <i data-lucide="clock" class="w-5 h-5"></i>
-        <span class="text-[10px]">タイムテーブル</span>
-      </a>
+    <!-- モバイル固定ボトムナビ (4タブ) -->
+    <nav class="fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-slate-200/70 py-2 px-3 z-40 flex justify-around items-center max-w-xl mx-auto shadow-[0_-4px_20px_rgba(0,0,0,0.03)]">
+      ${navHtml}
     </nav>
   `;
 
