@@ -426,27 +426,52 @@
         if (bandSnap.exists()) {
           const bandData = bandSnap.data();
 
-          // 出演開始時間（読み取り専用）
-          document.getElementById('modal-start-time').textContent = bandData.startTime || bandData.start || '未定';
+          // 出演開始時間（timetableコレクションから照合、なければ未定）
+          let startTime = bandData.startTime || bandData.start || '';
+          if (!startTime) {
+            try {
+              const ttSnap = await getDoc(doc(db, 'timetable', 'schedule'));
+              if (ttSnap.exists()) {
+                const slots = ttSnap.data().slots || [];
+                const matched = slots.find(s => s.bandId === bandId);
+                if (matched) startTime = matched.start || matched.startTime || '';
+              }
+            } catch (_) {}
+          }
+          document.getElementById('modal-start-time').textContent = startTime || '未定';
 
-          // メンバー
-          const membersVal = Array.isArray(bandData.members) 
-            ? bandData.members.join(' / ') 
-            : (bandData.members || '');
-          document.getElementById('edit-members').value = membersVal;
+          // メンバー：{ part: "Vo./Gt.", name: "ユタロ" } のオブジェクト配列を展開
+          if (Array.isArray(bandData.members) && bandData.members.length > 0) {
+            const formattedMembers = bandData.members.map(m => {
+              if (typeof m === 'object' && m !== null) {
+                return m.part ? `${m.part} ${m.name}` : (m.name || '');
+              }
+              return m;
+            }).join('\n');
+            document.getElementById('edit-members').value = formattedMembers;
+          } else {
+            document.getElementById('edit-members').value = '';
+          }
 
-          // セットリスト（曲順・曲名）
-          const setlist = Array.isArray(bandData.setlist) ? bandData.setlist : [];
-          if (setlist.length > 0) {
-            setlist.forEach((song, idx) => {
+          // セットリスト：songIds がある場合は songs コレクションから曲名を取得
+          const songIds = Array.isArray(bandData.songIds) ? bandData.songIds : [];
+          if (songIds.length > 0) {
+            const songPromises = songIds.map(sid => getDoc(doc(db, 'songs', sid)));
+            const songDocs = await Promise.all(songPromises);
+            songDocs.forEach((sDoc, idx) => {
+              const title = sDoc.exists() ? (sDoc.data().title || sDoc.data().name || '') : '';
+              setlistContainer.appendChild(createSongRow(title, idx + 1));
+            });
+          } else if (Array.isArray(bandData.setlist) && bandData.setlist.length > 0) {
+            bandData.setlist.forEach((song, idx) => {
               setlistContainer.appendChild(createSongRow(song, idx + 1));
             });
           } else {
             setlistContainer.appendChild(createSongRow('', 1));
           }
 
-          // Cueシート
-          document.getElementById('edit-cuesheet').value = bandData.cueSheet || '';
+          // Cueシート：cueSheetUrl（画像URL）または cueSheet（テキスト）を取得
+          document.getElementById('edit-cuesheet').value = bandData.cueSheetUrl || bandData.cueSheet || '';
 
           bandModal.classList.remove('hidden');
           renumberSongs();
@@ -468,21 +493,38 @@
       saveBtn.disabled = true;
       saveBtn.innerHTML = `<span>保存中...</span>`;
 
+      // メンバーのパース：改行またはスラッシュで区切り、{ name, part } のオブジェクト配列を作成
       const membersText = document.getElementById('edit-members').value.trim();
-      const membersArr = membersText ? membersText.split(/[\n/、,]/).map(s => s.trim()).filter(Boolean) : [];
+      const memberLines = membersText ? membersText.split(/[\n/]/).map(s => s.trim()).filter(Boolean) : [];
+      const membersArr = memberLines.map(line => {
+        const parts = line.split(/[\s ]+/);
+        if (parts.length >= 2) {
+          return { part: parts[0], name: parts.slice(1).join(' ') };
+        }
+        return { part: '', name: line };
+      });
 
+      // セットリスト配列
       const songInputs = setlistContainer.querySelectorAll('input[type="text"]');
       const setlistArr = Array.from(songInputs).map(inp => inp.value.trim()).filter(Boolean);
 
-      const cueSheetText = document.getElementById('edit-cuesheet').value.trim();
+      // Cueシート（URL形式なら cueSheetUrl、テキストなら cueSheet に振り分け）
+      const cueSheetVal = document.getElementById('edit-cuesheet').value.trim();
+      const updateData = {
+        members: membersArr,
+        memberCount: membersArr.length,
+        setlist: setlistArr,
+        updatedAt: new Date()
+      };
+
+      if (cueSheetVal.startsWith('http://') || cueSheetVal.startsWith('https://')) {
+        updateData.cueSheetUrl = cueSheetVal;
+      } else {
+        updateData.cueSheet = cueSheetVal;
+      }
 
       try {
-        await updateDoc(doc(db, 'bands', currentEditingBandId), {
-          members: membersArr,
-          setlist: setlistArr,
-          cueSheet: cueSheetText,
-          updatedAt: new Date()
-        });
+        await updateDoc(doc(db, 'bands', currentEditingBandId), updateData);
 
         alert('バンド情報を更新しました！');
         closeModal();
