@@ -875,6 +875,7 @@
     // ==========================================================================
     let allArtists = []; // リアルタイム読込バンドデータ保持
     let firebaseBandsList = []; // Firestoreキャッシュリスト
+    let timetableSlots = []; // Firestoreから取得したタイムテーブル全スロット
     let favorites = JSON.parse(localStorage.getItem('sakae_favs') || '[]');
     let userStampsCount = parseInt(localStorage.getItem('echo_stamps') || '0', 10);
     let artistFilterTab = 'all';
@@ -1084,14 +1085,15 @@
                   }
 
                   renderFutureEventsList(eventsList);
-                  loadBandsWithFilter(db);
-                } else {
-                  showToast("イベントが登録されていません。");
-                }
-              } catch (e) {
-                console.error("Event list snapshot parsing error:", e);
-              }
-            }, error => {
+              loadBandsWithFilter(db);
+              loadTimetableFromFirestore(db); // 追加: タイムテーブル同期
+            } else {
+              showToast("イベントが登録されていません。");
+            }
+          }, error => {
+            console.error("Events loading error:", error);
+          });
+        }), error => {
               console.error("Events loading error:", error);
               showToast("イベント情報の取得に失敗しました。");
             });
@@ -1104,7 +1106,55 @@
         console.error("Firebase Initialization Error:", err);
       }
     }
+// Firestoreからtimetableコレクションを同期する
+    function loadTimetableFromFirestore(db) {
+      try {
+        db.collection("timetable").onSnapshot(snapshot => {
+          try {
+            let tempSlots = [];
+            snapshot.forEach(doc => {
+              const data = doc.data();
+              // dayフィールドは "day1" または "day2" などで保存されているため数値(1 or 2)に正規化
+              let rawDay = data.day;
+              let dayNum = 1;
+              if (typeof rawDay === 'string') {
+                if (rawDay.includes('2')) dayNum = 2;
+              } else if (typeof rawDay === 'number') {
+                dayNum = rawDay;
+              }
 
+              tempSlots.push({
+                id: doc.id,
+                bandId: data.bandId || "",
+                day: dayNum,
+                startTime: data.startTime || "00:00",
+                endTime: data.endTime || "00:00",
+                type: data.type || (data.bandId ? "band" : "transition"),
+                note: data.note || ""
+              });
+            });
+
+            // startTimeの昇順に時系列ソート
+            tempSlots.sort((a, b) => {
+              return a.startTime.localeCompare(b.startTime);
+            });
+
+            timetableSlots = tempSlots;
+
+            if (!document.getElementById('screen-timetable').classList.contains('hidden')) {
+              renderTimetable();
+            }
+          } catch (e) {
+            console.error("Timetable snapshot parse error:", e);
+          }
+        }, err => {
+          console.error("Timetable collection load error:", err);
+        });
+      } catch (e) {
+        console.error("Load timetable wrapper error:", e);
+      }
+    }
+    
     // 最新のイベントをカレンダー風リストにレンダリングする
     function renderFutureEventsList(eventsList) {
       try {
@@ -1641,52 +1691,108 @@
       }
     }
 
-    // 単一会場(1カラム)仕様のタイムテーブルレンダラー
+    // 単一会場仕様のタイムテーブルレンダラー（Firestore timetable & bands 統合対応）
     function renderTimetable() {
       try {
         const row = document.getElementById('timetable-stages-row');
         if (!row) return;
         row.innerHTML = '';
 
-        // 選択された出演日に該当するバンドを抽出
-        let stageArtists = allArtists.filter(a => a.day === currentTimetableDay);
-        
-        if (timetableMode === 'my') {
-          stageArtists = stageArtists.filter(a => favorites.includes(a.id));
+        // 現在の日付タブ（currentTimetableDay）に合致するスロットを抽出
+        let targetSlots = timetableSlots.filter(s => s.day === currentTimetableDay);
+
+        // Firestoreにtimetableデータがまだ無い場合のフォールバック（従来通りallArtistsから生成）
+        if (targetSlots.length === 0) {
+          let stageArtists = allArtists.filter(a => a.day === currentTimetableDay);
+          if (timetableMode === 'my') {
+            stageArtists = stageArtists.filter(a => favorites.includes(a.id));
+          }
+          
+          let artistCardsHtml = '';
+          stageArtists.forEach(a => {
+            const isFav = favorites.includes(a.id);
+            artistCardsHtml += `
+              <div class="p-4 rounded-xl border ${isFav ? 'bg-red-50/50 border-red-100' : 'bg-gray-50 border-gray-100'} shadow-sm relative cursor-pointer hover:border-gray-300 transition-colors" onclick="showBandDetail('${a.id}')">
+                <div class="flex justify-between items-start mb-1.5">
+                  <span class="text-[10px] font-bold text-gray-400">出演バンド</span>
+                  <button onclick="event.stopPropagation(); toggleFavorite('${a.id}')" class="text-gray-400 hover:text-red-500 transition-colors">
+                    <i data-lucide="heart" class="w-4 h-4 ${isFav ? 'text-red-500 fill-current' : ''}"></i>
+                  </button>
+                </div>
+                <p class="text-sm font-black text-gray-800 leading-tight pr-4">${a.name}</p>
+              </div>
+            `;
+          });
+
+          row.innerHTML = `<div class="space-y-3">${artistCardsHtml || '<div class="text-xs text-gray-300 text-center py-12">演奏予定はありません</div>'}</div>`;
+          safeCreateIcons();
+          return;
         }
 
-        const column = document.createElement('div');
-        column.className = "w-full space-y-3";
-        
-        let artistCardsHtml = '';
-        stageArtists.forEach(a => {
-          const isFav = favorites.includes(a.id);
-          const timeLabel = a.isFromFirestore ? "出演日: " + a.time : a.time;
-          artistCardsHtml += `
-            <div class="p-4 rounded-xl border ${isFav ? 'bg-red-50/50 border-red-100' : 'bg-gray-50 border-gray-100'} shadow-sm relative cursor-pointer hover:border-gray-300 transition-colors" onclick="showBandDetail('${a.id}')">
-              <div class="flex justify-between items-start mb-1.5">
-                <span class="text-[10px] font-bold text-gray-400">${timeLabel}</span>
-                <button onclick="event.stopPropagation(); toggleFavorite('${a.id}')" class="text-gray-400 hover:text-red-500 transition-colors">
-                  <i data-lucide="heart" class="w-4 h-4 ${isFav ? 'text-red-500 fill-current' : ''}"></i>
-                </button>
+        // マイバンドモードのときは、紐づくバンドがマイバンドに含まれるスロット、または転換枠のみを残す
+        if (timetableMode === 'my') {
+          targetSlots = targetSlots.filter(slot => {
+            if (slot.type === 'transition' || !slot.bandId) return true;
+            return favorites.includes(slot.bandId);
+          });
+        }
+
+        let slotsHtml = '';
+        targetSlots.forEach(slot => {
+          const startTime = slot.startTime || "00:00";
+          const endTime = slot.endTime || "00:00";
+          const timeRange = `${startTime} 〜 ${endTime}`;
+
+          if (slot.type === 'transition' || !slot.bandId) {
+            // 転換・調整時間枠の表示
+            slotsHtml += `
+              <div class="p-3 bg-gray-100/70 border border-dashed border-gray-200 rounded-xl flex items-center justify-between text-xs">
+                <div class="flex items-center gap-2">
+                  <span class="px-2 py-0.5 bg-gray-200 text-gray-600 font-mono text-[9px] font-black rounded">転換</span>
+                  <span class="font-bold text-gray-500">${slot.note || 'ステージ転換・音響調整'}</span>
+                </div>
+                <span class="text-[10px] text-gray-400 font-mono">${timeRange}</span>
               </div>
-              <p class="text-sm font-black text-gray-800 leading-tight pr-4">${a.name}</p>
-            </div>
-          `;
+            `;
+          } else {
+            // バンド演奏枠の表示（bandsコレクションから該当バンドを引く）
+            const bandObj = allArtists.find(a => a.id === slot.bandId);
+            const bandName = bandObj ? bandObj.name : "読込中のバンド";
+            const bandImg = bandObj ? bandObj.image : "";
+            const isFav = bandObj ? favorites.includes(bandObj.id) : false;
+
+            slotsHtml += `
+              <div class="p-4 rounded-xl border ${isFav ? 'bg-red-50/50 border-red-100' : 'bg-white border-gray-100'} shadow-sm relative cursor-pointer hover:border-gray-300 transition-colors" ${bandObj ? `onclick="showBandDetail('${bandObj.id}')"` : ''}>
+                <div class="flex justify-between items-start mb-1.5">
+                  <span class="text-[10px] font-black text-indigo-600 font-mono bg-indigo-50 px-2 py-0.5 rounded">${timeRange}</span>
+                  ${bandObj ? `
+                    <button onclick="event.stopPropagation(); toggleFavorite('${bandObj.id}')" class="text-gray-400 hover:text-red-500 transition-colors">
+                      <i data-lucide="heart" class="w-4 h-4 ${isFav ? 'text-red-500 fill-current' : ''}"></i>
+                    </button>
+                  ` : ''}
+                </div>
+                <div class="flex items-center gap-3">
+                  ${bandImg ? `<img src="${bandImg}" class="w-10 h-10 rounded-lg object-cover flex-shrink-0 border border-gray-100">` : ''}
+                  <div>
+                    <h4 class="text-sm font-black text-gray-900 leading-tight">${bandName}</h4>
+                    ${slot.note ? `<p class="text-[10px] text-gray-400 mt-0.5">${slot.note}</p>` : ''}
+                  </div>
+                </div>
+              </div>
+            `;
+          }
         });
 
-        column.innerHTML = `
+        row.innerHTML = `
           <div class="space-y-3">
-            ${artistCardsHtml || '<div class="text-xs text-gray-300 text-center py-12">演奏予定はありません</div>'}
+            ${slotsHtml || '<div class="text-xs text-gray-300 text-center py-12">タイムテーブルの登録がありません</div>'}
           </div>
         `;
-        row.appendChild(column);
         safeCreateIcons();
       } catch (e) {
         console.error("Render timetable error:", e);
       }
     }
-
     // ==================== [RESERVATION SYSTEM (合わせ予約)] ====================
     function setReservationDate(day) {
       try {
