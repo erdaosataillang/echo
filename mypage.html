@@ -429,6 +429,62 @@
       }
     });
 
+
+    // SE音源関連
+    const sePlayerBox = document.getElementById('se-player-box');
+    const seAudioPlayer = document.getElementById('se-audio-player');
+    const seFileName = document.getElementById('se-file-name');
+    const seStatusBadge = document.getElementById('se-status-badge');
+    const seFileInput = document.getElementById('se-file-input');
+    const seUrlInput = document.getElementById('edit-se-url');
+    const seRemoveBtn = document.getElementById('se-remove-btn');
+
+    let pendingSeFile = null;
+
+    function setSePreview(url, name = 'SE音源') {
+      seUrlInput.value = url || '';
+      pendingSeFile = null;
+      seFileInput.value = '';
+
+      if (url) {
+        seAudioPlayer.src = url;
+        seFileName.textContent = name;
+        sePlayerBox.classList.remove('hidden');
+        seStatusBadge.textContent = '登録済み';
+        seStatusBadge.className = 'text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full';
+      } else {
+        seAudioPlayer.pause();
+        seAudioPlayer.src = '';
+        sePlayerBox.classList.add('hidden');
+        seStatusBadge.textContent = '未登録';
+        seStatusBadge.className = 'text-[10px] font-bold text-slate-400';
+      }
+    }
+
+    // 音声ファイル選択時の即時再生準備
+    seFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (file.size > 30 * 1024 * 1024) {
+        alert('SE音源のサイズは30MB以下にしてください。');
+        return;
+      }
+
+      pendingSeFile = file;
+      const objectUrl = URL.createObjectURL(file);
+      setSePreview(objectUrl, file.name);
+      seStatusBadge.textContent = '未保存の音源あり';
+      seStatusBadge.className = 'text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full';
+      if (window.lucide) window.lucide.createIcons();
+    });
+
+    // SE削除ボタン
+    seRemoveBtn.addEventListener('click', () => {
+      setSePreview('');
+      if (window.lucide) window.lucide.createIcons();
+    });
+
     // ============================================================
     // バンド情報編集モーダル制御
     // ============================================================
