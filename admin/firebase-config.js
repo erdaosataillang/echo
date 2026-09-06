@@ -1,4 +1,4 @@
-// firebase-config.js
+// /admin/firebase-config.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
 import { 
   getFirestore, 
@@ -7,6 +7,7 @@ import {
   getDoc,
   getDocs, 
   addDoc, 
+  setDoc,
   updateDoc, 
   deleteDoc, 
   onSnapshot, 
@@ -14,6 +15,12 @@ import {
   orderBy, 
   serverTimestamp 
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+import { 
+  getAuth, 
+  sendSignInLinkToEmail, 
+  isSignInWithEmailLink, 
+  signInWithEmailLink 
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyA6Toofq1A0qDUgJFimU6C0aZuz-L1RuN8",
@@ -27,6 +34,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
+export const auth = getAuth(app);
 
 export {
   collection,
@@ -34,10 +42,14 @@ export {
   getDoc,
   getDocs,
   addDoc,
+  setDoc,
   updateDoc,
   deleteDoc,
   onSnapshot,
   query,
   orderBy,
-  serverTimestamp
+  serverTimestamp,
+  sendSignInLinkToEmail,
+  isSignInWithEmailLink,
+  signInWithEmailLink
 };
