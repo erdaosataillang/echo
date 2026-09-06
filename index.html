@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HOME - LIVE FESTIVAL</title>
+  <title>HOME - ECHO</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
@@ -11,18 +11,18 @@
     body { font-family: 'Inter', 'Noto Sans JP', sans-serif; }
   </style>
 </head>
-<body class="bg-[#F8FAFC] text-slate-700 min-h-screen pb-24 antialiased">
+<body class="bg-[#FAF8FD] text-slate-700 min-h-screen pb-24 antialiased">
 
-  <!-- 共通ヘッダー＆ボトムナビ -->
+  <!-- 共通ナビ -->
   <div id="public-nav-container"></div>
 
   <main class="max-w-xl mx-auto p-4 space-y-5">
     
-    <!-- メインビジュアル（指定画像に差し替え） -->
-    <div class="rounded-3xl overflow-hidden shadow-md border border-slate-100 bg-slate-900">
+    <!-- メインバナー -->
+    <div class="rounded-3xl overflow-hidden shadow-md border border-purple-100 bg-slate-900">
       <img 
         src="https://ul.h3z.jp/oGmzGZow.PNG" 
-        alt="Live Stage Banner" 
+        alt="ECHO Banner" 
         class="w-full h-auto object-cover block"
       >
     </div>
@@ -32,18 +32,18 @@
 
     <!-- クイックアクセスリンク -->
     <div class="grid grid-cols-2 gap-3">
-      <a href="timetable.html" class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm hover:border-blue-200 transition group flex flex-col justify-between">
-        <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+      <a href="timetable.html" class="bg-white rounded-2xl p-4 border border-purple-100 shadow-sm hover:border-[#C97DE6] transition group flex flex-col justify-between">
+        <div class="w-10 h-10 rounded-xl bg-purple-50 text-[#B870DE] flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
           <i data-lucide="clock" class="w-5 h-5"></i>
         </div>
         <div>
           <h2 class="text-sm font-bold text-slate-900">タイムテーブル</h2>
-          <p class="text-[11px] text-slate-400 mt-0.5">当日の出演順・セトリ確認</p>
+          <p class="text-[11px] text-slate-400 mt-0.5">当日の進行・出演順</p>
         </div>
       </a>
 
-      <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col justify-between">
-        <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-3">
+      <div class="bg-white rounded-2xl p-4 border border-purple-100 shadow-sm flex flex-col justify-between">
+        <div class="w-10 h-10 rounded-xl bg-purple-50 text-[#B870DE] flex items-center justify-center mb-3">
           <i data-lucide="users" class="w-5 h-5"></i>
         </div>
         <div>
@@ -54,23 +54,23 @@
     </div>
 
     <!-- 参加大学・団体一覧 -->
-    <section class="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm space-y-3">
+    <section class="bg-white rounded-3xl p-5 border border-purple-100 shadow-sm space-y-3">
       <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">PARTICIPATING UNIVERSITIES</h2>
       
       <div class="space-y-2">
-        <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100" style="border-left: 4px solid #C97DE6;">
+        <div class="flex items-center justify-between p-3 rounded-2xl bg-[#FAF8FD] border border-purple-100" style="border-left: 4px solid #C97DE6;">
           <span class="text-xs font-bold text-slate-800">愛知学院大学</span>
-          <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-50 text-purple-600">AGU</span>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-100 text-[#B870DE]">AGU</span>
         </div>
-        <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100" style="border-left: 4px solid #61C253;">
+        <div class="flex items-center justify-between p-3 rounded-2xl bg-[#FAF8FD] border border-purple-100" style="border-left: 4px solid #61C253;">
           <span class="text-xs font-bold text-slate-800">名古屋商科大学 軽音学部</span>
           <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-600">NUCB</span>
         </div>
-        <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100" style="border-left: 4px solid #5399C2;">
+        <div class="flex items-center justify-between p-3 rounded-2xl bg-[#FAF8FD] border border-purple-100" style="border-left: 4px solid #5399C2;">
           <span class="text-xs font-bold text-slate-800">愛知教育大学 軽音学部</span>
           <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-sky-50 text-sky-600">AUE</span>
         </div>
-        <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100" style="border-left: 4px solid #C25361;">
+        <div class="flex items-center justify-between p-3 rounded-2xl bg-[#FAF8FD] border border-purple-100" style="border-left: 4px solid #C25361;">
           <span class="text-xs font-bold text-slate-800">中京大学 サウンドコミュニケーション</span>
           <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-rose-50 text-rose-600">CHUKYO</span>
         </div>
