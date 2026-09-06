@@ -258,6 +258,7 @@
     import { db, auth, storage, doc, getDoc, updateDoc } from '/admin/firebase-config.js?v=2';
     import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
     import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-storage.js";
+    import { renderPublicNav } from './public-nav.js'; // ← これが存在するか確認
 
     const loadingEl = document.getElementById('mypage-loading');
     const contentEl = document.getElementById('mypage-content');
