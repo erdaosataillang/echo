@@ -70,7 +70,7 @@
           </div>
         </div>
 
-        <!-- 自分の出演バンド（登録時に選んだバンド） -->
+        <!-- 自分の出演バンド（登録時に選んだバンド一覧） -->
         <div id="my-bands-section" class="hidden">
           <div class="flex items-center justify-between mb-2">
             <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
@@ -80,7 +80,7 @@
             <span id="my-bands-count" class="text-[10px] text-[#B870DE] font-semibold"></span>
           </div>
           <div id="my-bands-list" class="space-y-2">
-            <!-- バンドアイテム -->
+            <!-- バンドアイテムがJSで挿入されます -->
           </div>
         </div>
       </div>
@@ -150,8 +150,77 @@
 
   </main>
 
+  <!-- バンド情報編集モーダル -->
+  <div id="band-edit-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl max-h-[90vh] flex flex-col shadow-2xl border border-purple-100 overflow-hidden animate-slide-up">
+      
+      <!-- モーダルヘッダー -->
+      <div class="p-4 px-6 border-b border-purple-100 flex items-center justify-between bg-[#FAF8FD]">
+        <div>
+          <span class="text-[10px] font-extrabold uppercase tracking-widest text-[#B870DE] bg-purple-50 px-2 py-0.5 rounded-full border border-purple-100">
+            BAND SETTINGS
+          </span>
+          <h3 id="modal-band-name" class="text-base font-black text-slate-900 mt-1">バンド名</h3>
+        </div>
+        <button type="button" id="close-modal-btn" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- 入力フォーム部（スクロール可） -->
+      <form id="band-edit-form" class="p-6 overflow-y-auto space-y-5 flex-1 text-xs">
+        
+        <!-- 出演開始時間（読み取り専用） -->
+        <div class="p-3 bg-purple-50/60 rounded-2xl border border-purple-100 flex items-center justify-between">
+          <span class="font-bold text-slate-600 flex items-center gap-1.5">
+            <i data-lucide="clock" class="w-4 h-4 text-[#B870DE]"></i>
+            <span>出演開始時間</span>
+          </span>
+          <span id="modal-start-time" class="text-sm font-black text-[#B870DE] font-mono">--:--</span>
+        </div>
+
+        <!-- 1. バンドメンバー -->
+        <div class="space-y-1.5">
+          <label class="block font-bold text-slate-700">メンバー一覧</label>
+          <textarea id="edit-members" rows="2" placeholder="例: Vo. たろう / Gt. はなこ / Ba. じろう / Dr. さぶろう" class="w-full p-3 bg-[#FAF8FD] border border-purple-100 rounded-xl text-xs focus:ring-2 focus:ring-[#B870DE]/20 focus:border-[#B870DE] text-slate-800 transition leading-relaxed"></textarea>
+          <p class="text-[10px] text-slate-400">パートと名前をスラッシュ(/)やカンマで入力してください</p>
+        </div>
+
+        <!-- 2 & 3. セットリスト（曲順・曲名） -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="block font-bold text-slate-700">セットリスト（曲順・曲名）</label>
+            <button type="button" id="add-song-btn" class="px-2.5 py-1 rounded-lg bg-purple-50 hover:bg-purple-100 text-[#B870DE] font-bold text-[11px] transition flex items-center gap-1">
+              <i data-lucide="plus" class="w-3 h-3"></i>
+              <span>曲を追加</span>
+            </button>
+          </div>
+          <div id="setlist-container" class="space-y-2">
+            <!-- 曲入力行が動的生成されます -->
+          </div>
+        </div>
+
+        <!-- 4. Cueシート / 舞台演出要望 -->
+        <div class="space-y-1.5">
+          <label class="block font-bold text-slate-700">Cueシート・PA/照明への要望</label>
+          <textarea id="edit-cuesheet" rows="4" placeholder="例:&#10;・1曲目サビ前で赤照明メインに切り替え&#10;・2曲目終わりのMCで客電点灯&#10;・ラスト曲のイントロでドラムカウント後に白フラッシュ" class="w-full p-3 bg-[#FAF8FD] border border-purple-100 rounded-xl text-xs focus:ring-2 focus:ring-[#B870DE]/20 focus:border-[#B870DE] text-slate-800 transition leading-relaxed"></textarea>
+          <p class="text-[10px] text-slate-400">照明イメージ、マイク本数の増減、MCタイミングなど裏方部へ伝えたい要望をご記入ください</p>
+        </div>
+
+        <!-- アクションボタン -->
+        <div class="pt-2">
+          <button type="submit" id="save-band-btn" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#C97DE6] to-[#B870DE] hover:from-[#be6cdc] hover:to-[#a960d1] text-white font-bold text-xs shadow-md shadow-purple-500/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+            <i data-lucide="check" class="w-4 h-4"></i>
+            <span>変更内容を保存する</span>
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
   <script type="module">
-    import { db, auth, doc, getDoc } from '/admin/firebase-config.js';
+    import { db, auth, doc, getDoc, updateDoc } from '/admin/firebase-config.js';
     import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
     import { renderPublicNav } from './public-nav.js';
 
@@ -201,6 +270,7 @@
         myBandsCount.textContent = `${userBands.length} 組`;
 
         myBandsList.innerHTML = userBands.map(band => {
+          const bandId = typeof band === 'object' ? (band.id || '') : '';
           const bandName = typeof band === 'object' ? (band.name || '名称未設定') : band;
           return `
             <div class="flex items-center justify-between p-3 rounded-2xl bg-[#FAF8FD] border border-purple-100 shadow-xs">
@@ -213,10 +283,10 @@
                   <span class="text-[10px] text-purple-600 font-semibold">${user.affiliation || 'ECHO 2026'}</span>
                 </div>
               </div>
-              <a href="timetable.html" class="text-[11px] font-bold text-[#B870DE] hover:text-purple-700 bg-white border border-purple-100 px-2.5 py-1 rounded-xl shadow-xs shrink-0 flex items-center gap-1 active:scale-95 transition">
-                <span>出番を確認</span>
-                <i data-lucide="chevron-right" class="w-3 h-3"></i>
-              </a>
+              <button data-band-id="${bandId}" data-band-name="${bandName}" class="edit-band-btn text-[11px] font-bold text-[#B870DE] hover:text-purple-700 bg-purple-50 hover:bg-purple-100/70 border border-purple-200 px-3 py-1.5 rounded-xl shadow-xs shrink-0 flex items-center gap-1 active:scale-95 transition">
+                <i data-lucide="edit-3" class="w-3 h-3"></i>
+                <span>情報を編集</span>
+              </button>
             </div>
           `;
         }).join('');
@@ -231,10 +301,10 @@
       if (user.role === 'performer' || user.role === 'staff') {
         backstagePanel.classList.remove('hidden');
         if (user.role === 'staff') {
-          btnAdmin.classList.remove('hidden'); // 管理ダッシュボード導線はスタッフのみ
+          btnAdmin.classList.remove('hidden');
         }
       } else {
-        backstagePanel.classList.add('hidden'); // 一般来場者には非表示
+        backstagePanel.classList.add('hidden');
       }
 
       // 画面切り替え
@@ -281,6 +351,151 @@
         window.location.href = 'index.html';
       } catch (err) {
         console.error('Logout error:', err);
+      }
+    });
+
+    // ============================================================
+    // バンド情報編集モーダル制御
+    // ============================================================
+    const bandModal = document.getElementById('band-edit-modal');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+    const bandEditForm = document.getElementById('band-edit-form');
+    const setlistContainer = document.getElementById('setlist-container');
+    const addSongBtn = document.getElementById('add-song-btn');
+
+    let currentEditingBandId = null;
+
+    function closeModal() {
+      bandModal.classList.add('hidden');
+      currentEditingBandId = null;
+    }
+    closeModalBtn.addEventListener('click', closeModal);
+
+    // 曲入力行の作成
+    function createSongRow(songName = '', index = 1) {
+      const row = document.createElement('div');
+      row.className = 'flex items-center gap-2 song-row animate-slide-up';
+      row.innerHTML = `
+        <span class="font-mono text-slate-400 font-bold w-5 text-center text-xs song-number">${index}.</span>
+        <input type="text" value="${songName}" placeholder="曲名を入力" class="flex-1 px-3 py-2 bg-[#FAF8FD] border border-purple-100 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#B870DE]/20 focus:border-[#B870DE] text-slate-800">
+        <button type="button" class="delete-song-btn w-7 h-7 rounded-lg bg-rose-50 text-rose-500 hover:bg-rose-100 flex items-center justify-center transition">
+          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+        </button>
+      `;
+
+      row.querySelector('.delete-song-btn').addEventListener('click', () => {
+        row.remove();
+        renumberSongs();
+      });
+
+      return row;
+    }
+
+    function renumberSongs() {
+      const rows = setlistContainer.querySelectorAll('.song-row');
+      rows.forEach((r, idx) => {
+        r.querySelector('.song-number').textContent = `${idx + 1}.`;
+      });
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    addSongBtn.addEventListener('click', () => {
+      const currentCount = setlistContainer.querySelectorAll('.song-row').length;
+      setlistContainer.appendChild(createSongRow('', currentCount + 1));
+      if (window.lucide) window.lucide.createIcons();
+    });
+
+    // 「情報を編集」ボタン押下時
+    document.addEventListener('click', async (e) => {
+      const btn = e.target.closest('.edit-band-btn');
+      if (!btn) return;
+
+      const bandId = btn.getAttribute('data-band-id');
+      const bandName = btn.getAttribute('data-band-name');
+      if (!bandId) {
+        alert('バンドIDが取得できませんでした。');
+        return;
+      }
+
+      currentEditingBandId = bandId;
+      document.getElementById('modal-band-name').textContent = bandName;
+      setlistContainer.innerHTML = '';
+
+      try {
+        const bandSnap = await getDoc(doc(db, 'bands', bandId));
+        if (bandSnap.exists()) {
+          const bandData = bandSnap.data();
+
+          // 出演開始時間（読み取り専用）
+          document.getElementById('modal-start-time').textContent = bandData.startTime || bandData.start || '未定';
+
+          // メンバー
+          const membersVal = Array.isArray(bandData.members) 
+            ? bandData.members.join(' / ') 
+            : (bandData.members || '');
+          document.getElementById('edit-members').value = membersVal;
+
+          // セットリスト（曲順・曲名）
+          const setlist = Array.isArray(bandData.setlist) ? bandData.setlist : [];
+          if (setlist.length > 0) {
+            setlist.forEach((song, idx) => {
+              setlistContainer.appendChild(createSongRow(song, idx + 1));
+            });
+          } else {
+            setlistContainer.appendChild(createSongRow('', 1));
+          }
+
+          // Cueシート
+          document.getElementById('edit-cuesheet').value = bandData.cueSheet || '';
+
+          bandModal.classList.remove('hidden');
+          renumberSongs();
+        } else {
+          alert('バンドデータが見つかりませんでした。');
+        }
+      } catch (err) {
+        console.error('Fetch band details error:', err);
+        alert('バンド情報の読み込みに失敗しました。');
+      }
+    });
+
+    // バンド情報の保存処理
+    bandEditForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!currentEditingBandId) return;
+
+      const saveBtn = document.getElementById('save-band-btn');
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = `<span>保存中...</span>`;
+
+      const membersText = document.getElementById('edit-members').value.trim();
+      const membersArr = membersText ? membersText.split(/[\n/、,]/).map(s => s.trim()).filter(Boolean) : [];
+
+      const songInputs = setlistContainer.querySelectorAll('input[type="text"]');
+      const setlistArr = Array.from(songInputs).map(inp => inp.value.trim()).filter(Boolean);
+
+      const cueSheetText = document.getElementById('edit-cuesheet').value.trim();
+
+      try {
+        await updateDoc(doc(db, 'bands', currentEditingBandId), {
+          members: membersArr,
+          setlist: setlistArr,
+          cueSheet: cueSheetText,
+          updatedAt: new Date()
+        });
+
+        alert('バンド情報を更新しました！');
+        closeModal();
+      } catch (err) {
+        console.error('Update band error:', err);
+        alert('保存に失敗しました。権限またはネットワークを確認してください。');
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = `
+          <i data-lucide="check" class="w-4 h-4"></i>
+          <span>変更内容を保存する</span>
+        `;
+        if (window.lucide) window.lucide.createIcons();
       }
     });
   </script>
