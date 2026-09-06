@@ -9,6 +9,10 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700;800&display=swap');
     body { font-family: 'Inter', 'Noto Sans JP', sans-serif; }
+
+    /* 横スクロールバー非表示 */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
 </head>
 <body class="bg-[#FAF8FD] text-slate-700 min-h-screen pb-24 antialiased">
@@ -18,13 +22,26 @@
 
   <main class="max-w-xl mx-auto p-4 space-y-5">
     
-    <!-- メインバナー -->
-    <div class="rounded-3xl overflow-hidden shadow-md border border-purple-100 bg-slate-900">
-      <img 
-        src="https://ul.h3z.jp/oGmzGZow.PNG" 
-        alt="ECHO Banner" 
-        class="w-full h-auto object-cover block"
-      >
+    <!-- 写真カメラスライダー（自動スライド＆スワイプ対応） -->
+    <div class="relative rounded-3xl overflow-hidden shadow-md border border-purple-100/80 bg-slate-900 group">
+      
+      <!-- スライドコンテナ -->
+      <div id="carousel-track" class="flex transition-transform duration-500 ease-out will-change-transform">
+        <!-- JSで画像アイテムが挿入されます -->
+      </div>
+
+      <!-- 左右インジケーター / ドット -->
+      <div id="carousel-dots" class="absolute bottom-3 inset-x-0 flex justify-center items-center gap-1.5 z-10 pointer-events-none">
+        <!-- ドットが挿入されます -->
+      </div>
+
+      <!-- 左右矢印ボタン（PC・ホバー時用） -->
+      <button id="prev-slide-btn" class="absolute left-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-sm flex items-center justify-center transition opacity-0 group-hover:opacity-100 z-10">
+        <i data-lucide="chevron-left" class="w-4 h-4"></i>
+      </button>
+      <button id="next-slide-btn" class="absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-sm flex items-center justify-center transition opacity-0 group-hover:opacity-100 z-10">
+        <i data-lucide="chevron-right" class="w-4 h-4"></i>
+      </button>
     </div>
 
     <!-- NOW PLAYING ミニカード -->
@@ -86,9 +103,96 @@
 
     renderPublicNav();
 
+    // ==========================================
+    // スライドショー画像設定
+    // ここに流したい写真URLを並べます
+    // ==========================================
+    const SLIDE_IMAGES = [
+      'https://ul.h3z.jp/oGmzGZow.PNG',
+      'https://ul.h3z.jp/Uli92vvU.jpg'
+      // 写真を追加したい場合はここに追加するだけで自動反映されます
+    ];
+
+    function initCarousel(images) {
+      const track = document.getElementById('carousel-track');
+      const dotsContainer = document.getElementById('carousel-dots');
+      const prevBtn = document.getElementById('prev-slide-btn');
+      const nextBtn = document.getElementById('next-slide-btn');
+
+      if (!images || images.length === 0) return;
+
+      track.innerHTML = images.map((src, i) => `
+        <div class="w-full flex-shrink-0 aspect-[16/9] sm:aspect-[21/9] bg-slate-950 flex items-center justify-center overflow-hidden">
+          <img src="${src}" alt="Slide ${i + 1}" class="w-full h-full object-cover select-none pointer-events-none">
+        </div>
+      `).join('');
+
+      dotsContainer.innerHTML = images.map((_, i) => `
+        <span class="carousel-dot w-1.5 h-1.5 rounded-full transition-all duration-300 ${i === 0 ? 'bg-white w-4' : 'bg-white/40'}"></span>
+      `).join('');
+
+      let currentIndex = 0;
+      let timer = null;
+
+      function updateSlide(idx) {
+        currentIndex = (idx + images.length) % images.length;
+        track.style.transform = `translateX(-${currentIndex * 100}%)`;
+
+        const dots = dotsContainer.querySelectorAll('.carousel-dot');
+        dots.forEach((dot, i) => {
+          if (i === currentIndex) {
+            dot.className = 'carousel-dot w-4 h-1.5 rounded-full bg-white transition-all duration-300';
+          } else {
+            dot.className = 'carousel-dot w-1.5 h-1.5 rounded-full bg-white/40 transition-all duration-300';
+          }
+        });
+      }
+
+      function nextSlide() { updateSlide(currentIndex + 1); }
+      function prevSlide() { updateSlide(currentIndex - 1); }
+
+      function startAutoPlay() {
+        if (images.length <= 1) return;
+        stopAutoPlay();
+        timer = setInterval(nextSlide, 4000); // 4秒ごとに切り替え
+      }
+      function stopAutoPlay() {
+        if (timer) clearInterval(timer);
+      }
+
+      prevBtn.addEventListener('click', () => { prevSlide(); startAutoPlay(); });
+      nextBtn.addEventListener('click', () => { nextSlide(); startAutoPlay(); });
+
+      // スマホ向けスワイプ（タッチ操作）対応
+      let touchStartX = 0;
+      let touchEndX = 0;
+
+      track.addEventListener('touchstart', (e) => {
+        stopAutoPlay();
+        touchStartX = e.changedTouches[0].screenX;
+      }, { passive: true });
+
+      track.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        if (touchStartX - touchEndX > 40) {
+          nextSlide();
+        } else if (touchEndX - touchStartX > 40) {
+          prevSlide();
+        }
+        startAutoPlay();
+      }, { passive: true });
+
+      startAutoPlay();
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    initCarousel(SLIDE_IMAGES);
+
+    // ==========================================
+    // バンド & タイムテーブル同期
+    // ==========================================
     const bandsMap = new Map();
     const slotsCache = new Map();
-
     const triggerNow = initNowPlaying(slotsCache, bandsMap, () => 'day1');
 
     onSnapshot(collection(db, 'bands'), (snapshot) => {
