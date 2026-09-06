@@ -20,7 +20,58 @@
   <!-- 共通ナビ -->
   <div id="public-nav-container"></div>
 
-  <main class="max-w-xl mx-auto p-4 space-y-5">
+  <!-- 未ログイン時に表示するログインゲート（初期非表示） -->
+  <div id="auth-gate-container" class="hidden max-w-xl mx-auto p-4 pt-10 space-y-4">
+    <div class="bg-white rounded-3xl p-6 sm:p-8 border border-purple-100 shadow-[0_4px_25px_-5px_rgba(184,112,222,0.08)] relative overflow-hidden">
+      <div class="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-[#C97DE6] via-[#B870DE] to-[#5399C2]"></div>
+
+      <div id="gate-form-area" class="space-y-5">
+        <div class="text-center space-y-1">
+          <span class="inline-block text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-purple-50 text-[#B870DE] border border-purple-100">
+            ECHO PORTAL
+          </span>
+          <h1 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-1">
+            ログインして参加する
+          </h1>
+          <p class="text-xs text-slate-400">
+            登録済みのメールアドレスを入力してください。<br>パスワード不要のログインリンクをお送りします。
+          </p>
+        </div>
+
+        <form id="gate-login-form" class="space-y-3.5">
+          <div class="relative group">
+            <i data-lucide="mail" class="w-4 h-4 text-slate-400 group-focus-within:text-[#B870DE] transition absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+            <input type="email" id="gate-email" required placeholder="example@email.com" class="w-full pl-10 pr-4 py-2.5 bg-[#FAF8FD] border border-purple-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#B870DE]/20 focus:border-[#B870DE] text-slate-800 transition font-mono">
+          </div>
+
+          <button type="submit" id="gate-submit-btn" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#C97DE6] to-[#B870DE] hover:from-[#be6cdc] hover:to-[#a960d1] text-white font-bold text-sm shadow-md shadow-purple-500/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+            <span>ログインリンクを送信</span>
+            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </button>
+        </form>
+
+        <div class="pt-3 border-t border-purple-50 text-center space-y-2">
+          <p class="text-xs text-slate-400">まだアカウントをお持ちでない方</p>
+          <a href="register.html" class="inline-flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl bg-purple-50 hover:bg-purple-100/70 text-[#B870DE] text-xs font-bold transition active:scale-[0.98]">
+            <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
+            <span>新規アカウント登録はこちら</span>
+          </a>
+        </div>
+      </div>
+
+      <div id="gate-sent-area" class="hidden py-6 text-center space-y-3">
+        <div class="w-14 h-14 rounded-full bg-purple-50 text-[#B870DE] border border-purple-100 flex items-center justify-center mx-auto">
+          <i data-lucide="mail-check" class="w-7 h-7 stroke-[2]"></i>
+        </div>
+        <h2 class="text-lg font-bold text-slate-900">メールを送信しました</h2>
+        <p class="text-xs text-slate-500 leading-relaxed max-w-xs mx-auto">
+          <span id="gate-sent-email" class="font-bold text-slate-800"></span> 宛てに届いたリンクをタップしてログインしてください。
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <main id="portal-main" class="max-w-xl mx-auto p-4 space-y-5">
     
     <!-- 写真カメラスライダー（自動スライド＆スワイプ対応） -->
     <div class="relative rounded-3xl overflow-hidden shadow-md border border-purple-100/80 bg-slate-900 group">
@@ -152,11 +203,23 @@
   </main>
 
   <script type="module">
-    import { db, collection, onSnapshot } from '/admin/firebase-config.js';
+    import { db, auth, collection, onSnapshot, sendSignInLinkToEmail } from '/admin/firebase-config.js';
     import { renderPublicNav } from './public-nav.js';
     import { initNowPlaying } from './now-playing.js';
 
-    renderPublicNav();
+    // ログイン状態の確認
+    const currentUser = localStorage.getItem('echo_user');
+    const mainContent = document.getElementById('portal-main');
+    const authGate = document.getElementById('auth-gate-container');
+
+    if (!currentUser) {
+      // 未ログイン：メイン画面を隠し、ログイン画面を表示
+      if (mainContent) mainContent.classList.add('hidden');
+      if (authGate) authGate.classList.remove('hidden');
+    } else {
+      // ログイン済み：ナビゲーションを表示
+      renderPublicNav();
+    }
 
     // スライドショー画像設定
     const SLIDE_IMAGES = [
@@ -238,25 +301,65 @@
       if (window.lucide) window.lucide.createIcons();
     }
 
-    initCarousel(SLIDE_IMAGES);
+    // ログインリンク送信処理（未ログイン時）
+    const gateForm = document.getElementById('gate-login-form');
+    if (gateForm) {
+      gateForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('gate-email').value.trim().toLowerCase();
+        const submitBtn = document.getElementById('gate-submit-btn');
 
-    // バンド & タイムテーブル同期
-    const bandsMap = new Map();
-    const slotsCache = new Map();
-    const triggerNow = initNowPlaying(slotsCache, bandsMap, () => 'day1');
+        auth.languageCode = 'ja';
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<span>送信中...</span>`;
 
-    onSnapshot(collection(db, 'bands'), (snapshot) => {
-      bandsMap.clear();
-      snapshot.forEach(docSnap => bandsMap.set(docSnap.id, docSnap.data()));
-      document.getElementById('stat-band-count').textContent = `${snapshot.size} BANDS`;
-      if (triggerNow) triggerNow();
-    });
+        const actionCodeSettings = {
+          url: window.location.origin + '/register.html', // 認証処理はregister.htmlで実行
+          handleCodeInApp: true,
+        };
 
-    onSnapshot(collection(db, 'timetable'), (snapshot) => {
-      slotsCache.clear();
-      snapshot.forEach(docSnap => slotsCache.set(docSnap.id, docSnap.data()));
-      if (triggerNow) triggerNow();
-    });
+        try {
+          await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+          window.localStorage.setItem('echo_email_for_signin', email);
+
+          document.getElementById('gate-form-area').classList.add('hidden');
+          document.getElementById('gate-sent-email').textContent = email;
+          document.getElementById('gate-sent-area').classList.remove('hidden');
+          if (window.lucide) window.lucide.createIcons();
+        } catch (err) {
+          console.error(err);
+          alert('メール送信に失敗しました。アドレスをお確かめください。');
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = `<span>ログインリンクを送信</span><i data-lucide="arrow-right" class="w-4 h-4"></i>`;
+          if (window.lucide) window.lucide.createIcons();
+        }
+      });
+    }
+
+    // ログイン済みの場合のみカルーセルとFirestore同期を実行
+    if (currentUser) {
+      initCarousel(SLIDE_IMAGES);
+
+      const bandsMap = new Map();
+      const slotsCache = new Map();
+      const triggerNow = initNowPlaying(slotsCache, bandsMap, () => 'day1');
+
+      onSnapshot(collection(db, 'bands'), (snapshot) => {
+        bandsMap.clear();
+        snapshot.forEach(docSnap => bandsMap.set(docSnap.id, docSnap.data()));
+        const countEl = document.getElementById('stat-band-count');
+        if (countEl) countEl.textContent = `${snapshot.size} BANDS`;
+        if (triggerNow) triggerNow();
+      });
+
+      onSnapshot(collection(db, 'timetable'), (snapshot) => {
+        slotsCache.clear();
+        snapshot.forEach(docSnap => slotsCache.set(docSnap.id, docSnap.data()));
+        if (triggerNow) triggerNow();
+      });
+    }
+
+    if (window.lucide) window.lucide.createIcons();
   </script>
 </body>
 </html>
