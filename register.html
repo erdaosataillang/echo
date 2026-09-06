@@ -10,7 +10,6 @@
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+JP:wght@400;500;700;900&display=swap');
     body { font-family: 'Inter', 'Noto Sans JP', sans-serif; }
 
-    /* アニメーション定義 */
     @keyframes slideUpFade {
       from { opacity: 0; transform: translateY(16px); }
       to { opacity: 1; transform: translateY(0); }
@@ -19,9 +18,6 @@
       0% { transform: scale(0.6); opacity: 0; }
       60% { transform: scale(1.15); opacity: 1; }
       100% { transform: scale(1); }
-    }
-    @keyframes shimmer {
-      100% { transform: translateX(100%); }
     }
 
     .animate-slide-up {
@@ -51,7 +47,7 @@
       <!-- アクセントバー -->
       <div class="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-[#C97DE6] via-[#B870DE] to-[#5399C2]"></div>
 
-      <!-- 登録フォーム -->
+      <!-- 登録フォーム本体 -->
       <div id="form-container" class="space-y-6">
         <div>
           <span class="inline-block text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-purple-50 text-[#B870DE] border border-purple-100">
@@ -67,7 +63,7 @@
 
         <form id="register-form" class="space-y-5">
           
-          <!-- 参加区分（ロール） -->
+          <!-- 参加区分（ロール選択） -->
           <div>
             <label class="block text-xs font-bold text-slate-600 mb-1.5">参加区分 <span class="text-rose-500">*</span></label>
             <div class="grid grid-cols-3 gap-2">
@@ -105,14 +101,30 @@
               <i data-lucide="school" class="w-4 h-4 text-slate-400 group-focus-within:text-[#B870DE] transition absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
               <select id="user-affiliation" required class="w-full pl-10 pr-8 py-2.5 bg-[#FAF8FD] border border-purple-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#B870DE]/20 focus:border-[#B870DE] text-slate-800 transition appearance-none cursor-pointer">
                 <option value="" disabled selected>所属を選択してください</option>
-                <option value="愛知学院大学 (ライトパープルジャズテッド)">愛知学院大学 (ライトパープルジャズテッド)</option>
-                <option value="愛知学院大学 (トゥインクリングスターズ)">愛知学院大学 (トゥインクリングスターズ)</option>
-                <option value="愛知教育大学 軽音学部">愛知教育大学 軽音学部</option>
+                <option value="愛知学院大学">愛知学院大学</option>
                 <option value="名古屋商科大学 軽音学部">名古屋商科大学 軽音学部</option>
+                <option value="愛知教育大学 軽音学部">愛知教育大学 軽音学部</option>
                 <option value="中京大学 サウンドコミュニケーション">中京大学 サウンドコミュニケーション</option>
                 <option value="その他大学・一般">その他大学・一般</option>
               </select>
               <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+            </div>
+          </div>
+
+          <!-- 出演バンド選択（出演者のみ表示・大学連動・複数選択可） -->
+          <div id="band-selection-section" class="hidden transition-all duration-300">
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="block text-xs font-bold text-slate-600">
+                出演バンド <span class="text-[10px] text-slate-400 font-normal">（掛け持ち可・複数選択）</span>
+              </label>
+              <span id="band-selected-count" class="text-[10px] text-[#B870DE] font-semibold">0 選択中</span>
+            </div>
+
+            <!-- バンドチップ一覧表示コンテナ -->
+            <div id="band-chips-container" class="space-y-1.5">
+              <p class="text-xs text-slate-400 py-3 text-center bg-[#FAF8FD] rounded-xl border border-dashed border-purple-100">
+                所属大学を選択すると、出演バンド一覧が表示されます
+              </p>
             </div>
           </div>
 
@@ -124,7 +136,6 @@
             </div>
             
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs" id="instruments-container">
-              <!-- Vo -->
               <label class="instrument-chip flex items-center gap-2 p-2.5 rounded-xl border border-purple-100/90 bg-[#FAF8FD] cursor-pointer hover:bg-purple-50/40 transition-all duration-200 select-none active:scale-95">
                 <input type="checkbox" name="instrument" value="Vo" class="hidden">
                 <span class="check-box w-3.5 h-3.5 rounded border border-slate-300 flex items-center justify-center transition-colors">
@@ -133,7 +144,6 @@
                 <span class="font-bold">ボーカル (Vo)</span>
               </label>
 
-              <!-- Gt -->
               <label class="instrument-chip flex items-center gap-2 p-2.5 rounded-xl border border-purple-100/90 bg-[#FAF8FD] cursor-pointer hover:bg-purple-50/40 transition-all duration-200 select-none active:scale-95">
                 <input type="checkbox" name="instrument" value="Gt" class="hidden">
                 <span class="check-box w-3.5 h-3.5 rounded border border-slate-300 flex items-center justify-center transition-colors">
@@ -142,7 +152,6 @@
                 <span class="font-bold">ギター (Gt)</span>
               </label>
 
-              <!-- Ba -->
               <label class="instrument-chip flex items-center gap-2 p-2.5 rounded-xl border border-purple-100/90 bg-[#FAF8FD] cursor-pointer hover:bg-purple-50/40 transition-all duration-200 select-none active:scale-95">
                 <input type="checkbox" name="instrument" value="Ba" class="hidden">
                 <span class="check-box w-3.5 h-3.5 rounded border border-slate-300 flex items-center justify-center transition-colors">
@@ -151,7 +160,6 @@
                 <span class="font-bold">ベース (Ba)</span>
               </label>
 
-              <!-- Dr -->
               <label class="instrument-chip flex items-center gap-2 p-2.5 rounded-xl border border-purple-100/90 bg-[#FAF8FD] cursor-pointer hover:bg-purple-50/40 transition-all duration-200 select-none active:scale-95">
                 <input type="checkbox" name="instrument" value="Dr" class="hidden">
                 <span class="check-box w-3.5 h-3.5 rounded border border-slate-300 flex items-center justify-center transition-colors">
@@ -160,7 +168,6 @@
                 <span class="font-bold">ドラム (Dr)</span>
               </label>
 
-              <!-- Key -->
               <label class="instrument-chip flex items-center gap-2 p-2.5 rounded-xl border border-purple-100/90 bg-[#FAF8FD] cursor-pointer hover:bg-purple-50/40 transition-all duration-200 select-none active:scale-95">
                 <input type="checkbox" name="instrument" value="Key" class="hidden">
                 <span class="check-box w-3.5 h-3.5 rounded border border-slate-300 flex items-center justify-center transition-colors">
@@ -169,7 +176,6 @@
                 <span class="font-bold">キーボード (Key)</span>
               </label>
 
-              <!-- Horn -->
               <label class="instrument-chip flex items-center gap-2 p-2.5 rounded-xl border border-purple-100/90 bg-[#FAF8FD] cursor-pointer hover:bg-purple-50/40 transition-all duration-200 select-none active:scale-95">
                 <input type="checkbox" name="instrument" value="Horn" class="hidden">
                 <span class="check-box w-3.5 h-3.5 rounded border border-slate-300 flex items-center justify-center transition-colors">
@@ -178,7 +184,6 @@
                 <span class="font-bold">管楽器 / Sax</span>
               </label>
 
-              <!-- DJ -->
               <label class="instrument-chip flex items-center gap-2 p-2.5 rounded-xl border border-purple-100/90 bg-[#FAF8FD] cursor-pointer hover:bg-purple-50/40 transition-all duration-200 select-none active:scale-95">
                 <input type="checkbox" name="instrument" value="DJ/Manipulator" class="hidden">
                 <span class="check-box w-3.5 h-3.5 rounded border border-slate-300 flex items-center justify-center transition-colors">
@@ -187,13 +192,12 @@
                 <span class="font-bold">DJ / PA</span>
               </label>
 
-              <!-- None / Other -->
               <label class="instrument-chip flex items-center gap-2 p-2.5 rounded-xl border border-purple-100/90 bg-[#FAF8FD] cursor-pointer hover:bg-purple-50/40 transition-all duration-200 select-none active:scale-95">
                 <input type="checkbox" name="instrument" value="None/Audience" class="hidden">
                 <span class="check-box w-3.5 h-3.5 rounded border border-slate-300 flex items-center justify-center transition-colors">
                   <i data-lucide="check" class="w-2.5 h-2.5 text-white opacity-0 transition-opacity"></i>
                 </span>
-                <span class="font-bold text-slate-500">なし / 見る専</span>
+                <span class="font-bold text-slate-500">なし / 鑑賞</span>
               </label>
             </div>
           </div>
@@ -204,15 +208,6 @@
             <div class="relative group">
               <i data-lucide="mail" class="w-4 h-4 text-slate-400 group-focus-within:text-[#B870DE] transition absolute left-3.5 top-1/2 -translate-y-1/2"></i>
               <input type="email" id="user-email" required placeholder="example@email.com" class="w-full pl-10 pr-4 py-2.5 bg-[#FAF8FD] border border-purple-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#B870DE]/20 focus:border-[#B870DE] text-slate-800 transition placeholder:text-slate-400 font-mono">
-            </div>
-          </div>
-
-          <!-- 出演バンド名 (出演者のみ表示) -->
-          <div id="band-field" class="hidden transition-all duration-300">
-            <label class="block text-xs font-bold text-slate-600 mb-1.5">出演バンド名</label>
-            <div class="relative group">
-              <i data-lucide="mic" class="w-4 h-4 text-slate-400 group-focus-within:text-[#B870DE] transition absolute left-3.5 top-1/2 -translate-y-1/2"></i>
-              <input type="text" id="user-band" placeholder="所属バンド名を入力" class="w-full pl-10 pr-4 py-2.5 bg-[#FAF8FD] border border-purple-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#B870DE]/20 focus:border-[#B870DE] text-slate-800 transition placeholder:text-slate-400">
             </div>
           </div>
 
@@ -256,30 +251,142 @@
     <p>&copy; 2026 ECHO. All rights reserved.</p>
   </footer>
 
-  <!-- 登録＆インタラクション スクリプト -->
+  <!-- 登録＆バンドピックアップスクリプト -->
   <script type="module">
-    import { db, collection, addDoc, serverTimestamp } from '/admin/firebase-config.js';
+    import { db, collection, addDoc, onSnapshot, serverTimestamp } from '/admin/firebase-config.js';
 
     if (window.lucide) window.lucide.createIcons();
 
+    // バンドキャッシュ（大学名で検索できるようにMap化）
+    let allBands = [];
+
+    // Firestoreから登録済みバンド一覧を取得
+    onSnapshot(collection(db, 'bands'), (snapshot) => {
+      allBands = [];
+      snapshot.forEach(docSnap => {
+        allBands.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      // 既に大学が選択されていれば再描画
+      renderBandOptions();
+    });
+
     const roleRadios = document.querySelectorAll('input[name="user-role"]');
-    const bandField = document.getElementById('band-field');
+    const bandSection = document.getElementById('band-selection-section');
+    const bandChipsContainer = document.getElementById('band-chips-container');
+    const bandCountLabel = document.getElementById('band-selected-count');
+    const affiliationSelect = document.getElementById('user-affiliation');
+
     const form = document.getElementById('register-form');
     const formContainer = document.getElementById('form-container');
     const successContainer = document.getElementById('success-container');
     const submitBtn = document.getElementById('submit-btn');
 
-    // 楽器チップの選択状態とスタイルアニメーション
+    // 出演者選択時のバンド欄表示切り替え
+    roleRadios.forEach(radio => {
+      radio.addEventListener('change', () => {
+        if (radio.value === 'performer') {
+          bandSection.classList.remove('hidden');
+          bandSection.classList.add('animate-slide-up');
+          renderBandOptions();
+        } else {
+          bandSection.classList.add('hidden');
+        }
+        if (window.lucide) window.lucide.createIcons();
+      });
+    });
+
+    // 大学選択変更時に該当バンドをピックアップ
+    affiliationSelect.addEventListener('change', () => {
+      renderBandOptions();
+    });
+
+    function renderBandOptions() {
+      const selectedRole = document.querySelector('input[name="user-role"]:checked')?.value;
+      if (selectedRole !== 'performer') return;
+
+      const affiliation = affiliationSelect.value;
+      if (!affiliation) {
+        bandChipsContainer.innerHTML = `
+          <p class="text-xs text-slate-400 py-3 text-center bg-[#FAF8FD] rounded-xl border border-dashed border-purple-100">
+            所属大学を選択すると、出演バンド一覧が表示されます
+          </p>
+        `;
+        bandCountLabel.textContent = '0 選択中';
+        return;
+      }
+
+      // 大学名の一致判定（愛知学院大学などの表記揺れもカバー）
+      const matchedBands = allBands.filter(band => {
+        if (!band.university) return false;
+        return affiliation.includes(band.university) || band.university.includes(affiliation);
+      });
+
+      if (matchedBands.length === 0) {
+        bandChipsContainer.innerHTML = `
+          <p class="text-xs text-slate-400 py-3 text-center bg-[#FAF8FD] rounded-xl border border-purple-100">
+            この大学の登録バンドは現在ありません（後ほど管理側で追加されます）
+          </p>
+        `;
+        bandCountLabel.textContent = '0 選択中';
+        return;
+      }
+
+      let html = '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 animate-slide-up">';
+      matchedBands.forEach(band => {
+        html += `
+          <label class="band-chip flex items-center justify-between p-2.5 px-3 rounded-xl border border-purple-100/90 bg-[#FAF8FD] cursor-pointer hover:bg-purple-50/50 transition-all duration-200 select-none active:scale-95 shadow-sm">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <span class="band-check-box w-4 h-4 rounded-md border border-slate-300 flex items-center justify-center transition-colors shrink-0">
+                <i data-lucide="check" class="w-3 h-3 text-white opacity-0 transition-opacity"></i>
+              </span>
+              <span class="font-bold text-xs text-slate-800 truncate">${band.name}</span>
+            </div>
+            <input type="checkbox" name="selected-band" value="${band.id}" data-name="${band.name}" class="hidden">
+          </label>
+        `;
+      });
+      html += '</div>';
+
+      bandChipsContainer.innerHTML = html;
+
+      // バンドチップの選択アニメーションとリスナー登録
+      const chips = bandChipsContainer.querySelectorAll('.band-chip');
+      chips.forEach(chip => {
+        const checkbox = chip.querySelector('input[type="checkbox"]');
+        const box = chip.querySelector('.band-check-box');
+        const checkIcon = box.querySelector('svg, i');
+
+        chip.addEventListener('click', () => {
+          setTimeout(() => {
+            if (checkbox.checked) {
+              chip.classList.add('border-[#B870DE]', 'bg-purple-50/80', 'text-[#B870DE]');
+              box.classList.add('bg-[#B870DE]', 'border-[#B870DE]');
+              if (checkIcon) checkIcon.classList.remove('opacity-0');
+            } else {
+              chip.classList.remove('border-[#B870DE]', 'bg-purple-50/80', 'text-[#B870DE]');
+              box.classList.remove('bg-[#B870DE]', 'border-[#B870DE]');
+              if (checkIcon) checkIcon.classList.add('opacity-0');
+            }
+
+            const count = bandChipsContainer.querySelectorAll('input[name="selected-band"]:checked').length;
+            bandCountLabel.textContent = `${count} 選択中`;
+          }, 0);
+        });
+      });
+
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    // 楽器チップの選択同期
     const instrumentChips = document.querySelectorAll('.instrument-chip');
-    const countLabel = document.getElementById('instrument-selected-count');
+    const instrumentCountLabel = document.getElementById('instrument-selected-count');
 
     instrumentChips.forEach(chip => {
       const checkbox = chip.querySelector('input[type="checkbox"]');
       const box = chip.querySelector('.check-box');
       const checkIcon = box.querySelector('svg, i');
 
-      chip.addEventListener('click', (e) => {
-        // labelクリック時の標準動作と同期
+      chip.addEventListener('click', () => {
         setTimeout(() => {
           if (checkbox.checked) {
             chip.classList.add('border-[#B870DE]', 'bg-purple-50/80', 'text-[#B870DE]', 'shadow-sm');
@@ -291,36 +398,32 @@
             if (checkIcon) checkIcon.classList.add('opacity-0');
           }
 
-          const selectedCount = document.querySelectorAll('input[name="instrument"]:checked').length;
-          countLabel.textContent = `${selectedCount} 選択中`;
+          const count = document.querySelectorAll('input[name="instrument"]:checked').length;
+          instrumentCountLabel.textContent = `${count} 選択中`;
         }, 0);
       });
     });
 
-    // 出演者選択時のバンド名入力展開アニメーション
-    roleRadios.forEach(radio => {
-      radio.addEventListener('change', () => {
-        if (radio.value === 'performer') {
-          bandField.classList.remove('hidden');
-          bandField.classList.add('animate-slide-up');
-        } else {
-          bandField.classList.add('hidden');
-        }
-        if (window.lucide) window.lucide.createIcons();
-      });
-    });
-
-    // 登録送信
+    // 登録送信処理
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       
       const role = document.querySelector('input[name="user-role"]:checked').value;
       const name = document.getElementById('user-name').value.trim();
-      const affiliation = document.getElementById('user-affiliation').value;
+      const affiliation = affiliationSelect.value;
       const email = document.getElementById('user-email').value.trim();
-      const bandName = document.getElementById('user-band').value.trim();
 
-      // 選択された楽器一覧を取得
+      // 選択されたバンドのIDと名前を取得
+      let selectedBands = [];
+      if (role === 'performer') {
+        const checkedBandBoxes = document.querySelectorAll('input[name="selected-band"]:checked');
+        selectedBands = Array.from(checkedBandBoxes).map(cb => ({
+          id: cb.value,
+          name: cb.getAttribute('data-name')
+        }));
+      }
+
+      // 選択された楽器一覧
       const selectedInstruments = Array.from(document.querySelectorAll('input[name="instrument"]:checked')).map(cb => cb.value);
 
       submitBtn.disabled = true;
@@ -337,11 +440,11 @@
           affiliation: affiliation,
           email: email,
           instruments: selectedInstruments,
-          bandName: role === 'performer' ? bandName : '',
+          bands: selectedBands, // 複数バンドの配列 [{ id, name }, ...]
           createdAt: serverTimestamp()
         });
 
-        // ローカルストレージにキャッシュ
+        // ローカルストレージに保存
         localStorage.setItem('echo_user', JSON.stringify({
           id: docRef.id,
           name,
@@ -349,10 +452,10 @@
           affiliation,
           email,
           instruments: selectedInstruments,
-          bandName
+          bands: selectedBands
         }));
 
-        // 完了アニメーションへの切り替え
+        // 完了アニメーションへ切り替え
         formContainer.classList.add('hidden');
         successContainer.classList.remove('hidden');
         if (window.lucide) window.lucide.createIcons();
