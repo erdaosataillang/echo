@@ -264,6 +264,14 @@
       sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink 
     } from '/admin/firebase-config.js';
 
+    // メール言語を日本語に固定
+    auth.languageCode = 'ja';
+
+    // すでにログイン済みで、かつ認証リンクを踏んで来たわけではない場合はマイページへ
+    if (!isSignInWithEmailLink(auth, window.location.href) && localStorage.getItem('echo_user')) {
+      window.location.href = 'mypage.html';
+    }
+
     if (window.lucide) window.lucide.createIcons();
 
     const formContainer = document.getElementById('form-container');
@@ -321,13 +329,17 @@
               lastLoginAt: serverTimestamp()
             }, { merge: true });
 
-            // ログインセッションをローカルに保存
-            localStorage.setItem('echo_user', JSON.stringify({
+            // ログインセッション（全プロフィール）をローカルに完全保存
+            const completeUser = {
               uid: uid,
               email: email,
               name: profileData.name || 'ゲスト',
-              role: profileData.role || 'audience'
-            }));
+              role: profileData.role || 'audience',
+              affiliation: profileData.affiliation || 'その他大学・一般',
+              bands: profileData.bands || [],
+              instruments: profileData.instruments || []
+            };
+            localStorage.setItem('echo_user', JSON.stringify(completeUser));
 
             // 成功UIへ切り替え
             document.getElementById('verifying-spinner').classList.add('hidden');
