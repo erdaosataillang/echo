@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LIVE FESTIVAL - HOME</title>
+  <title>HOME - LIVE FESTIVAL</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
@@ -18,18 +18,13 @@
 
   <main class="max-w-xl mx-auto p-4 space-y-5">
     
-    <!-- メインビジュアル / ウェルカムバナー -->
-    <div class="relative bg-gradient-to-br from-slate-900 via-slate-800 to-blue-950 text-white rounded-3xl p-6 shadow-lg overflow-hidden">
-      <div class="relative z-10 space-y-2">
-        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-blue-500/30 text-blue-300 border border-blue-400/30">
-          EVENT PORTAL
-        </span>
-        <h1 class="text-2xl font-black tracking-tight pt-1">LIVE STAGE 2026</h1>
-        <p class="text-xs text-slate-300 leading-relaxed">
-          4大学合同ライブイベント。当日のタイムテーブルや出演バンド情報、セットリストをリアルタイムに確認できます。
-        </p>
-      </div>
-      <i data-lucide="music" class="absolute -right-4 -bottom-4 w-36 h-36 text-white/5 pointer-events-none stroke-[1]"></i>
+    <!-- メインビジュアル（指定画像に差し替え） -->
+    <div class="rounded-3xl overflow-hidden shadow-md border border-slate-100 bg-slate-900">
+      <img 
+        src="https://ul.h3z.jp/oGmzGZow.PNG" 
+        alt="Live Stage Banner" 
+        class="w-full h-auto object-cover block"
+      >
     </div>
 
     <!-- NOW PLAYING ミニカード -->
@@ -89,16 +84,13 @@
     import { renderPublicNav } from './public-nav.js';
     import { initNowPlaying } from './now-playing.js';
 
-    // 共通ボトムナビのレンダリング
     renderPublicNav();
 
     const bandsMap = new Map();
     const slotsCache = new Map();
 
-    // NOW PLAYING の初期化（ホーム用・Day1をデフォルト参照）
     const triggerNow = initNowPlaying(slotsCache, bandsMap, () => 'day1');
 
-    // バンド数集計 & キャッシュ
     onSnapshot(collection(db, 'bands'), (snapshot) => {
       bandsMap.clear();
       snapshot.forEach(docSnap => bandsMap.set(docSnap.id, docSnap.data()));
@@ -106,7 +98,6 @@
       if (triggerNow) triggerNow();
     });
 
-    // タイムテーブル同期
     onSnapshot(collection(db, 'timetable'), (snapshot) => {
       slotsCache.clear();
       snapshot.forEach(docSnap => slotsCache.set(docSnap.id, docSnap.data()));
