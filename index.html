@@ -20,6 +20,12 @@
   <!-- 共通ナビ -->
   <div id="public-nav-container"></div>
 
+  <!-- 認証判定中ローディング（初期表示） -->
+  <div id="auth-loading" class="max-w-xl mx-auto p-12 text-center space-y-3">
+    <div class="w-8 h-8 border-2 border-purple-200 border-t-[#B870DE] rounded-full animate-spin mx-auto"></div>
+    <p class="text-xs text-slate-400 font-medium tracking-wide">認証情報を確認中...</p>
+  </div>
+
   <!-- 未ログイン時に表示するログインゲート（初期非表示） -->
   <div id="auth-gate-container" class="hidden max-w-xl mx-auto p-4 pt-10 space-y-4">
     <div class="bg-white rounded-3xl p-6 sm:p-8 border border-purple-100 shadow-[0_4px_25px_-5px_rgba(184,112,222,0.08)] relative overflow-hidden">
@@ -203,23 +209,26 @@
   </main>
 
   <script type="module">
-    import { db, auth, collection, onSnapshot, sendSignInLinkToEmail } from '/admin/firebase-config.js';
+    import { 
+      db, 
+      auth, 
+      collection, 
+      doc, 
+      getDoc, 
+      onSnapshot, 
+      sendSignInLinkToEmail,
+      isSignInWithEmailLink,
+      signInWithEmailLink
+    } from '/admin/firebase-config.js';
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
     import { renderPublicNav } from './public-nav.js';
     import { initNowPlaying } from './now-playing.js';
 
-    // ログイン状態の確認
-    const currentUser = localStorage.getItem('echo_user');
+    const loadingEl = document.getElementById('auth-loading');
     const mainContent = document.getElementById('portal-main');
     const authGate = document.getElementById('auth-gate-container');
 
-    if (!currentUser) {
-      // 未ログイン：メイン画面を隠し、ログイン画面を表示
-      if (mainContent) mainContent.classList.add('hidden');
-      if (authGate) authGate.classList.remove('hidden');
-    } else {
-      // ログイン済み：ナビゲーションを表示
-      renderPublicNav();
-    }
+    // スライドショー画像設定
 
     // スライドショー画像設定
     const SLIDE_IMAGES = [
@@ -301,7 +310,86 @@
       if (window.lucide) window.lucide.createIcons();
     }
 
-    // ログインリンク送信処理（未ログイン時）
+    // 表示切り替え処理
+    function showPortal() {
+      if (loadingEl) loadingEl.classList.add('hidden');
+      if (authGate) authGate.classList.add('hidden');
+      if (mainContent) mainContent.classList.remove('hidden');
+      renderPublicNav();
+      startPortalServices();
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    function showGate() {
+      if (loadingEl) loadingEl.classList.add('hidden');
+      if (mainContent) mainContent.classList.add('hidden');
+      if (authGate) authGate.classList.remove('hidden');
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    // A. メールのリンクを直接踏んでアクセスしてきた場合の認証
+    async function handleEmailLinkSignIn() {
+      if (!isSignInWithEmailLink(auth, window.location.href)) return false;
+
+      let email = window.localStorage.getItem('echo_email_for_signin');
+      if (!email) {
+        email = window.prompt('確認のため、送信先のメールアドレスを入力してください:');
+      }
+      if (!email) return false;
+
+      try {
+        const result = await signInWithEmailLink(auth, email, window.location.href);
+        window.localStorage.removeItem('echo_email_for_signin');
+        window.history.replaceState({}, document.title, window.location.pathname);
+
+        // Firestoreのプロファイル存在確認
+        const userDoc = await getDoc(doc(db, 'users', result.user.uid));
+        if (userDoc.exists()) {
+          localStorage.setItem('echo_user', JSON.stringify({ uid: result.user.uid, ...userDoc.data() }));
+          showPortal();
+          return true;
+        } else {
+          // 未登録の場合は登録ページへ
+          window.location.href = 'register.html';
+          return true;
+        }
+      } catch (err) {
+        console.error('Link Signin Error:', err);
+        alert('リンクの有効期限が切れているか、すでに使用されています。');
+        return false;
+      }
+    }
+
+    // B. Firebaseへのログイン状態の問い合わせ
+    async function initAuth() {
+      const linkHandled = await handleEmailLinkSignIn();
+      if (linkHandled) return;
+
+      onAuthStateChanged(auth, async (user) => {
+        if (!user) {
+          localStorage.removeItem('echo_user');
+          showGate();
+          return;
+        }
+
+        try {
+          // Firebase側でログイン認証されている場合、Firestoreのユーザーデータを取得
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            localStorage.setItem('echo_user', JSON.stringify({ uid: user.uid, ...userDoc.data() }));
+            showPortal();
+          } else {
+            localStorage.removeItem('echo_user');
+            showGate();
+          }
+        } catch (err) {
+          console.error('Firestore Fetch Error:', err);
+          showGate();
+        }
+      });
+    }
+
+    // C. ログインリンク送信処理（未ログイン時）
     const gateForm = document.getElementById('gate-login-form');
     if (gateForm) {
       gateForm.addEventListener('submit', async (e) => {
@@ -313,8 +401,9 @@
         submitBtn.disabled = true;
         submitBtn.innerHTML = `<span>送信中...</span>`;
 
+        // メールリンクを踏んだ際にこのindex.html自身へ戻して自動ログインさせる
         const actionCodeSettings = {
-          url: window.location.origin + '/register.html', // 認証処理はregister.htmlで実行
+          url: window.location.origin + window.location.pathname,
           handleCodeInApp: true,
         };
 
@@ -336,8 +425,12 @@
       });
     }
 
-    // ログイン済みの場合のみカルーセルとFirestore同期を実行
-    if (currentUser) {
+    // D. 認証完了後に動かすポータル機能（カルーセル & Firestore同期）
+    let servicesStarted = false;
+    function startPortalServices() {
+      if (servicesStarted) return;
+      servicesStarted = true;
+
       initCarousel(SLIDE_IMAGES);
 
       const bandsMap = new Map();
@@ -359,7 +452,8 @@
       });
     }
 
-    if (window.lucide) window.lucide.createIcons();
+    // 認証監視スタート
+    initAuth();
   </script>
 </body>
 </html>
