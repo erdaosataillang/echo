@@ -16,74 +16,40 @@
   <!-- 共通ナビ -->
   <div id="public-nav-container"></div>
 
-  <!-- 日程切り替えタブ -->
-  <div id="public-header-container"></div>
-
   <main class="max-w-xl mx-auto p-4 space-y-4">
-    <!-- NOW PLAYING -->
-    <div id="now-playing-container"></div>
-
-    <!-- タイムテーブル本体 -->
-    <section class="space-y-3">
-      <div class="flex items-center justify-between px-1">
-        <h2 id="current-day-heading" class="text-sm font-bold text-slate-800">1日目 スケジュール</h2>
-        <span id="slot-count" class="text-xs text-slate-400 font-semibold">0 枠</span>
+    <!-- ヘッダーエリア -->
+    <div class="flex items-center justify-between px-1 pt-1">
+      <div>
+        <h1 class="text-lg font-bold text-slate-900">タイムテーブル</h1>
+        <p class="text-xs text-slate-400">画像をタップすると拡大表示できます</p>
       </div>
+      <a 
+        href="https://ul.h3z.jp/Uli92vvU.jpg" 
+        target="_blank" 
+        rel="noopener noreferrer" 
+        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-semibold shadow-sm transition"
+      >
+        <i data-lucide="zoom-in" class="w-3.5 h-3.5 text-slate-500"></i>
+        <span>拡大表示</span>
+      </a>
+    </div>
 
-      <div id="timeline-list" class="space-y-3">
-        <div class="text-center py-16 text-slate-400 text-sm">読み込み中...</div>
-      </div>
-    </section>
+    <!-- タイムテーブル画像コンテナ -->
+    <div class="bg-white rounded-3xl p-2 sm:p-3 border border-slate-100 shadow-sm overflow-hidden">
+      <a href="https://ul.h3z.jp/Uli92vvU.jpg" target="_blank" rel="noopener noreferrer" class="block cursor-zoom-in">
+        <img 
+          src="https://ul.h3z.jp/Uli92vvU.jpg" 
+          alt="Live Timetable" 
+          class="w-full h-auto rounded-2xl block object-contain"
+          loading="lazy"
+        >
+      </a>
+    </div>
   </main>
 
   <script type="module">
-    import { db, collection, onSnapshot, query, orderBy } from '/admin/firebase-config.js';
     import { renderPublicNav } from './public-nav.js';
-    import { initHeader } from './public-header.js';
-    import { initNowPlaying } from './now-playing.js';
-    import { renderTimelineList } from './public-timeline.js';
-
     renderPublicNav();
-
-    let activeDay = 'day1';
-    const bandsMap = new Map();
-    const songsMap = new Map();
-    const slotsCache = new Map();
-
-    let triggerNowPlayingUpdate = null;
-
-    const refreshUI = () => {
-      renderTimelineList({ slotsCache, bandsMap, songsMap, activeDay });
-      if (triggerNowPlayingUpdate) triggerNowPlayingUpdate();
-    };
-
-    initHeader({
-      onDayChange: (day) => {
-        activeDay = day;
-        refreshUI();
-      }
-    });
-
-    triggerNowPlayingUpdate = initNowPlaying(slotsCache, bandsMap, () => activeDay);
-
-    onSnapshot(collection(db, 'songs'), (snapshot) => {
-      songsMap.clear();
-      snapshot.forEach(docSnap => songsMap.set(docSnap.id, docSnap.data()));
-      refreshUI();
-    });
-
-    onSnapshot(collection(db, 'bands'), (snapshot) => {
-      bandsMap.clear();
-      snapshot.forEach(docSnap => bandsMap.set(docSnap.id, docSnap.data()));
-      refreshUI();
-    });
-
-    const q = query(collection(db, 'timetable'), orderBy('startTime', 'asc'));
-    onSnapshot(q, (snapshot) => {
-      slotsCache.clear();
-      snapshot.forEach(docSnap => slotsCache.set(docSnap.id, docSnap.data()));
-      refreshUI();
-    });
   </script>
 </body>
 </html>
