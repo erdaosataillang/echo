@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja" class="h-full overflow-hidden">
 <head>
+  <link rel="icon" href="data:,">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Echo 2026</title>
@@ -1111,7 +1112,6 @@
             let tempSlots = [];
             snapshot.forEach(doc => {
               const data = doc.data();
-              // dayフィールドは "day1" または "day2" などで保存されているため数値(1 or 2)に正規化
               let rawDay = data.day;
               let dayNum = 1;
               if (typeof rawDay === 'string') {
@@ -1131,7 +1131,6 @@
               });
             });
 
-            // startTimeの昇順に時系列ソート
             tempSlots.sort((a, b) => {
               return a.startTime.localeCompare(b.startTime);
             });
