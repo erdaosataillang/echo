@@ -3,67 +3,135 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ドリンク - LIVE FESTIVAL</title>
+  <title>DRINK - ECHO</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+JP:wght@400;500;700;900&display=swap');
     body { font-family: 'Inter', 'Noto Sans JP', sans-serif; }
   </style>
 </head>
-<body class="bg-[#F8FAFC] text-slate-700 min-h-screen pb-24 antialiased">
+<body class="bg-slate-950 text-slate-100 min-h-screen pb-24 antialiased selection:bg-amber-400 selection:text-black">
 
   <!-- 共通ナビ -->
   <div id="public-nav-container"></div>
 
   <main class="max-w-xl mx-auto p-4 space-y-4">
-    <!-- ドリンクチケット提示カード -->
-    <div class="bg-gradient-to-br from-amber-500 to-amber-600 text-white rounded-3xl p-6 shadow-md relative overflow-hidden">
-      <div class="relative z-10 space-y-3">
-        <div class="flex items-center justify-between">
-          <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-white/20 text-white">
+
+    <!-- ドリンクチケット提示エリア -->
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-lg relative overflow-hidden">
+      <div class="relative z-10 flex items-center justify-between">
+        <div>
+          <span class="text-[10px] font-bold tracking-widest text-amber-400 uppercase bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20">
             DRINK TICKET
           </span>
-          <span class="text-xs font-semibold">1回のみ有効</span>
+          <h2 class="text-base font-bold text-white mt-1">ドリンク引き換えチケット</h2>
+          <p class="text-[11px] text-slate-400">バーカウンターでご提示ください</p>
         </div>
-        <div>
-          <h2 class="text-2xl font-black">ドリンク交換チケット</h2>
-          <p class="text-xs text-amber-100 mt-1">バーカウンターでスタッフにこの画面をご提示ください。</p>
-        </div>
-        <button id="use-ticket-btn" class="w-full py-3 bg-white text-amber-600 font-bold text-sm rounded-2xl shadow-sm active:scale-98 transition">
-          チケットを使用する
+        <button id="use-ticket-btn" class="px-4 py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black font-extrabold text-xs rounded-xl shadow-md transition active:scale-95 shrink-0">
+          チケット使用
         </button>
       </div>
-      <i data-lucide="beer" class="absolute -right-3 -bottom-3 w-32 h-32 text-white/10 pointer-events-none"></i>
     </div>
 
-    <!-- ドリンクメニュー -->
-    <section class="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm space-y-3">
-      <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">DRINK MENU</h3>
+    <!-- メニューボード本体（画像準拠デザイン） -->
+    <section class="bg-black border-2 border-slate-800 rounded-3xl p-4 sm:p-6 shadow-2xl space-y-4">
       
-      <div class="divide-y divide-slate-100 text-sm">
-        <div class="py-3 flex items-center justify-between">
-          <div>
-            <p class="font-bold text-slate-800">生ビール</p>
-            <p class="text-[11px] text-slate-400">Alcohol</p>
-          </div>
-          <span class="font-mono font-bold text-slate-700">¥600 / チケット</span>
+      <!-- メニューヘッダー -->
+      <div class="flex flex-wrap items-baseline justify-between gap-2 border-b border-slate-800 pb-3">
+        <h1 class="text-xl sm:text-2xl font-black tracking-wider text-white uppercase font-mono">
+          ECHO DRINK MENU
+        </h1>
+        <span class="text-[11px] sm:text-xs font-bold text-slate-400 font-mono tracking-widest uppercase">
+          DRINK TICKET or CASH
+        </span>
+      </div>
+
+      <!-- 黄色の帯（ソフトドリンク） -->
+      <div class="bg-[#F59E0B] text-black font-black text-center py-1.5 rounded-lg text-sm sm:text-base tracking-widest shadow-inner">
+        ソフトドリンク
+      </div>
+
+      <!-- 価格・ジャンル見出しバー -->
+      <div class="grid grid-cols-3 gap-2 text-center font-mono">
+        <div class="col-span-2 border border-slate-800 rounded-xl p-2 bg-slate-950">
+          <p class="text-lg sm:text-xl font-black text-white">¥200</p>
+          <p class="text-[11px] font-bold text-slate-400">ソフトドリンク</p>
         </div>
-        <div class="py-3 flex items-center justify-between">
-          <div>
-            <p class="font-bold text-slate-800">ハイボール / レモンサワー</p>
-            <p class="text-[11px] text-slate-400">Alcohol</p>
-          </div>
-          <span class="font-mono font-bold text-slate-700">¥500 / チケット</span>
-        </div>
-        <div class="py-3 flex items-center justify-between">
-          <div>
-            <p class="font-bold text-slate-800">ウーロン茶 / コーラ / ジンジャーエール</p>
-            <p class="text-[11px] text-slate-400">Soft Drink</p>
-          </div>
-          <span class="font-mono font-bold text-slate-700">¥400 / チケット</span>
+        <div class="col-span-1 border border-slate-800 rounded-xl p-2 bg-slate-950">
+          <p class="text-lg sm:text-xl font-black text-rose-500">¥300</p>
+          <p class="text-[11px] font-bold text-rose-400">レッドブル</p>
         </div>
       </div>
+
+      <!-- メニューリスト（3列ブロック構成） -->
+      <div class="grid grid-cols-3 gap-2 sm:gap-3 text-xs sm:text-sm font-bold">
+        
+        <!-- ソフトドリンク 列1 -->
+        <div class="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3 space-y-2.5">
+          <div class="flex items-center gap-1.5 text-slate-200">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span>
+            <span>お水</span>
+          </div>
+          <div class="flex items-center gap-1.5 text-slate-200">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span>
+            <span>麦茶</span>
+          </div>
+          <div class="flex items-center gap-1.5 text-slate-200">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span>
+            <span>ウーロン茶</span>
+          </div>
+          <div class="flex items-center gap-1.5 text-slate-200">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span>
+            <span>コーラ</span>
+          </div>
+          <div class="flex items-center gap-1.5 text-slate-200">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span>
+            <span class="text-[11px] sm:text-sm">ジンジャーエール</span>
+          </div>
+        </div>
+
+        <!-- ソフトドリンク 列2 -->
+        <div class="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3 space-y-2.5">
+          <div class="flex items-center gap-1.5 text-slate-200">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span>
+            <span>カルピス</span>
+          </div>
+          <div class="flex items-center gap-1.5 text-slate-200">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span>
+            <span class="text-[11px] sm:text-sm">カルピスソーダ</span>
+          </div>
+          <div class="flex items-center gap-1.5 text-slate-200">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span>
+            <span class="text-[11px] sm:text-sm">オレンジジュース</span>
+          </div>
+          <div class="flex items-center gap-1.5 text-slate-200">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span>
+            <span class="text-[11px] sm:text-sm">オレンジスカッシュ</span>
+          </div>
+        </div>
+
+        <!-- レッドブル 列3 -->
+        <div class="bg-rose-950/20 border border-rose-900/50 rounded-2xl p-3 space-y-2.5">
+          <div class="flex items-center gap-1.5 text-rose-200">
+            <span class="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span>
+            <span>レッドブル</span>
+          </div>
+          <div class="flex items-center gap-1.5 text-purple-200">
+            <span class="w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0"></span>
+            <span class="text-[10px] sm:text-xs">レッドブルパープル</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- キャンペーン枠（赤枠バナー） -->
+      <div class="border-2 border-rose-500/90 rounded-2xl p-3 text-center bg-rose-500/10 shadow-[0_0_15px_rgba(244,63,94,0.15)]">
+        <p class="text-sm sm:text-base font-black tracking-wider text-rose-400 animate-pulse">
+          2杯買うと1杯無料！！
+        </p>
+      </div>
+
     </section>
   </main>
 
@@ -72,7 +140,7 @@
     renderPublicNav();
 
     document.getElementById('use-ticket-btn')?.addEventListener('click', () => {
-      if (confirm('スタッフの目の前で使用済みにしてください。使用済みにしますか？')) {
+      if (confirm('スタッフの確認を受けてから使用済みにしてください。\n使用済みにしますか？')) {
         alert('チケットを使用済みにしました。');
       }
     });
