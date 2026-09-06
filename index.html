@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Live Timetable & Setlist</title>
+  <title>LIVE FESTIVAL - HOME</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
@@ -11,78 +11,106 @@
     body { font-family: 'Inter', 'Noto Sans JP', sans-serif; }
   </style>
 </head>
-<body class="bg-[#F8FAFC] text-slate-700 min-h-screen pb-16 antialiased">
+<body class="bg-[#F8FAFC] text-slate-700 min-h-screen pb-24 antialiased">
 
-  <!-- ヘッダー・日程タブ (public-header.js が挿入) -->
-  <div id="public-header-container"></div>
+  <!-- 共通ヘッダー＆ボトムナビ -->
+  <div id="public-nav-container"></div>
 
   <main class="max-w-xl mx-auto p-4 space-y-5">
-    <!-- NOW PLAYING カード (now-playing.js が挿入) -->
+    
+    <!-- メインビジュアル / ウェルカムバナー -->
+    <div class="relative bg-gradient-to-br from-slate-900 via-slate-800 to-blue-950 text-white rounded-3xl p-6 shadow-lg overflow-hidden">
+      <div class="relative z-10 space-y-2">
+        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-blue-500/30 text-blue-300 border border-blue-400/30">
+          EVENT PORTAL
+        </span>
+        <h1 class="text-2xl font-black tracking-tight pt-1">LIVE STAGE 2026</h1>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          4大学合同ライブイベント。当日のタイムテーブルや出演バンド情報、セットリストをリアルタイムに確認できます。
+        </p>
+      </div>
+      <i data-lucide="music" class="absolute -right-4 -bottom-4 w-36 h-36 text-white/5 pointer-events-none stroke-[1]"></i>
+    </div>
+
+    <!-- NOW PLAYING ミニカード -->
     <div id="now-playing-container"></div>
 
-    <!-- タイムテーブルリスト本体 -->
-    <section class="space-y-3">
-      <div class="flex items-center justify-between px-1">
-        <h3 id="current-day-heading" class="text-sm font-bold text-slate-800">1日目 スケジュール</h3>
-        <span id="slot-count" class="text-xs text-slate-400 font-semibold">0 枠</span>
-      </div>
+    <!-- クイックアクセスリンク -->
+    <div class="grid grid-cols-2 gap-3">
+      <a href="timetable.html" class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm hover:border-blue-200 transition group flex flex-col justify-between">
+        <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+          <i data-lucide="clock" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h2 class="text-sm font-bold text-slate-900">タイムテーブル</h2>
+          <p class="text-[11px] text-slate-400 mt-0.5">当日の出演順・セトリ確認</p>
+        </div>
+      </a>
 
-      <div id="timeline-list" class="space-y-3">
-        <div class="text-center py-16 text-slate-400 text-sm">読み込み中...</div>
+      <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col justify-between">
+        <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-3">
+          <i data-lucide="users" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <span id="stat-band-count" class="text-lg font-black text-slate-900 font-mono">--</span>
+          <p class="text-[11px] text-slate-400 font-medium">参加バンド数</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 参加大学・団体一覧 -->
+    <section class="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm space-y-3">
+      <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">PARTICIPATING UNIVERSITIES</h2>
+      
+      <div class="space-y-2">
+        <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100" style="border-left: 4px solid #C97DE6;">
+          <span class="text-xs font-bold text-slate-800">愛知学院大学</span>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-50 text-purple-600">AGU</span>
+        </div>
+        <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100" style="border-left: 4px solid #61C253;">
+          <span class="text-xs font-bold text-slate-800">名古屋商科大学 軽音学部</span>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-600">NUCB</span>
+        </div>
+        <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100" style="border-left: 4px solid #5399C2;">
+          <span class="text-xs font-bold text-slate-800">愛知教育大学 軽音学部</span>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-sky-50 text-sky-600">AUE</span>
+        </div>
+        <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100" style="border-left: 4px solid #C25361;">
+          <span class="text-xs font-bold text-slate-800">中京大学 サウンドコミュニケーション</span>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-rose-50 text-rose-600">CHUKYO</span>
+        </div>
       </div>
     </section>
+
   </main>
 
-  <!-- アプリ統括スクリプト -->
   <script type="module">
-    import { db, collection, onSnapshot, query, orderBy } from './admin/firebase-config.js';
-    import { initHeader } from './public-header.js';
+    import { db, collection, onSnapshot } from '/admin/firebase-config.js';
+    import { renderPublicNav } from './public-nav.js';
     import { initNowPlaying } from './now-playing.js';
-    import { renderTimelineList } from './public-timeline.js';
 
-    let activeDay = 'day1';
+    // 共通ボトムナビのレンダリング
+    renderPublicNav();
+
     const bandsMap = new Map();
-    const songsMap = new Map();
     const slotsCache = new Map();
 
-    let triggerNowPlayingUpdate = null;
+    // NOW PLAYING の初期化（ホーム用・Day1をデフォルト参照）
+    const triggerNow = initNowPlaying(slotsCache, bandsMap, () => 'day1');
 
-    const refreshUI = () => {
-      renderTimelineList({ slotsCache, bandsMap, songsMap, activeDay });
-      if (triggerNowPlayingUpdate) triggerNowPlayingUpdate();
-    };
-
-    // ヘッダー初期化
-    initHeader({
-      onDayChange: (day) => {
-        activeDay = day;
-        refreshUI();
-      }
-    });
-
-    // NOW PLAYING 初期化
-    triggerNowPlayingUpdate = initNowPlaying(slotsCache, bandsMap, () => activeDay);
-
-    // 楽曲マスタ購読
-    onSnapshot(collection(db, 'songs'), (snapshot) => {
-      songsMap.clear();
-      snapshot.forEach(docSnap => songsMap.set(docSnap.id, docSnap.data()));
-      refreshUI();
-    });
-
-    // バンド購読
+    // バンド数集計 & キャッシュ
     onSnapshot(collection(db, 'bands'), (snapshot) => {
       bandsMap.clear();
       snapshot.forEach(docSnap => bandsMap.set(docSnap.id, docSnap.data()));
-      refreshUI();
+      document.getElementById('stat-band-count').textContent = `${snapshot.size} BANDS`;
+      if (triggerNow) triggerNow();
     });
 
-    // タイムテーブル購読
-    const q = query(collection(db, 'timetable'), orderBy('startTime', 'asc'));
-    onSnapshot(q, (snapshot) => {
+    // タイムテーブル同期
+    onSnapshot(collection(db, 'timetable'), (snapshot) => {
       slotsCache.clear();
       snapshot.forEach(docSnap => slotsCache.set(docSnap.id, docSnap.data()));
-      refreshUI();
+      if (triggerNow) triggerNow();
     });
   </script>
 </body>
