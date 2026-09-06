@@ -214,6 +214,45 @@
             <span id="cuesheet-status-badge" class="text-[10px] font-bold text-slate-400">未登録</span>
           </div>
 
+
+          <!-- 5. 登場SE音源（オーディオアップロード & 試聴プレイヤー） -->
+        <div class="space-y-2 pt-2 border-t border-purple-50">
+          <div class="flex items-center justify-between">
+            <label class="block font-bold text-slate-700 flex items-center gap-1.5">
+              <i data-lucide="volume-2" class="w-3.5 h-3.5 text-[#B870DE]"></i>
+              <span>登場SE音源</span>
+            </label>
+            <span id="se-status-badge" class="text-[10px] font-bold text-slate-400">未登録</span>
+          </div>
+
+          <!-- 音声プレイヤー表示エリア -->
+          <div id="se-player-box" class="hidden p-3 rounded-2xl bg-[#FAF8FD] border border-purple-100 space-y-2">
+            <div class="flex items-center justify-between text-xs">
+              <div class="flex items-center gap-2 min-w-0">
+                <i data-lucide="music" class="w-4 h-4 text-[#B870DE] shrink-0"></i>
+                <span id="se-file-name" class="font-bold text-slate-800 truncate">SE音源</span>
+              </div>
+              <button type="button" id="se-remove-btn" class="text-rose-500 hover:text-rose-700 text-[11px] font-bold flex items-center gap-1 shrink-0 p-1">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                <span>削除</span>
+              </button>
+            </div>
+            <audio id="se-audio-player" controls class="w-full h-8 outline-none"></audio>
+          </div>
+
+          <!-- 音源選択ドロップゾーン -->
+          <label id="se-upload-dropzone" class="flex flex-col items-center justify-center p-4 border-2 border-dashed border-purple-200 hover:border-[#B870DE] bg-[#FAF8FD] rounded-2xl cursor-pointer transition active:scale-[0.99] group">
+            <div class="w-10 h-10 rounded-full bg-purple-50 group-hover:bg-purple-100 text-[#B870DE] flex items-center justify-center mb-1.5 transition">
+              <i data-lucide="upload" class="w-5 h-5"></i>
+            </div>
+            <span class="font-bold text-slate-700 text-xs">タップして登場SE音源を選択</span>
+            <span class="text-[10px] text-slate-400 mt-0.5">MP3, WAV, M4A, AAC (最大 30MB)</span>
+            <input type="file" id="se-file-input" accept="audio/*,.mp3,.wav,.m4a,.aac" class="hidden">
+          </label>
+
+          <input type="hidden" id="edit-se-url" value="">
+        </div>
+
           <!-- プレビュー表示エリア -->
           <div id="cuesheet-preview-box" class="hidden relative rounded-2xl overflow-hidden border border-purple-100 bg-slate-900 group aspect-[16/9] flex items-center justify-center">
             <img id="cuesheet-preview-img" src="" alt="Cueシートプレビュー" class="w-full h-full object-contain">
