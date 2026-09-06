@@ -44,10 +44,10 @@ export function renderPublicNav() {
   const path = window.location.pathname;
   const isHome = path.endsWith('index.html') || path.endsWith('/');
   const isTimetable = path.endsWith('timetable.html');
+  const isDrink = path.endsWith('drink.html');
   const isMypage = path.endsWith('mypage.html');
 
   container.innerHTML = `
-    <!-- トップヘッダー -->
     <header class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-purple-100/60 transition-all">
       <div class="max-w-xl mx-auto px-4 h-14 flex items-center justify-between">
         <a href="index.html" class="flex items-center gap-2">
@@ -59,16 +59,19 @@ export function renderPublicNav() {
       </div>
     </header>
 
-    <!-- ボトム固定ナビゲーション -->
     <nav class="fixed bottom-0 inset-x-0 z-40 bg-white/90 backdrop-blur-lg border-t border-purple-100/80 max-w-xl mx-auto pb-safe">
-      <div class="grid grid-cols-3 h-16 items-center px-4">
+      <div class="grid grid-cols-4 h-16 items-center px-2">
         <a href="index.html" class="flex flex-col items-center justify-center gap-1 transition ${isHome ? 'text-[#B870DE]' : 'text-slate-400 hover:text-slate-600'}">
           <i data-lucide="home" class="w-5 h-5"></i>
           <span class="text-[10px] font-bold">ホーム</span>
         </a>
         <a href="timetable.html" class="flex flex-col items-center justify-center gap-1 transition ${isTimetable ? 'text-[#B870DE]' : 'text-slate-400 hover:text-slate-600'}">
           <i data-lucide="calendar" class="w-5 h-5"></i>
-          <span class="text-[10px] font-bold">タイムテーブル</span>
+          <span class="text-[10px] font-bold">タイテ</span>
+        </a>
+        <a href="drink.html" class="flex flex-col items-center justify-center gap-1 transition ${isDrink ? 'text-[#B870DE]' : 'text-slate-400 hover:text-slate-600'}">
+          <i data-lucide="cup-soda" class="w-5 h-5"></i>
+          <span class="text-[10px] font-bold">ドリンク</span>
         </a>
         <a href="mypage.html" class="flex flex-col items-center justify-center gap-1 transition ${isMypage ? 'text-[#B870DE]' : 'text-slate-400 hover:text-slate-600'}">
           <i data-lucide="user" class="w-5 h-5"></i>
