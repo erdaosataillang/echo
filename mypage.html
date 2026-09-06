@@ -259,6 +259,9 @@
     import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-storage.js";
     import { renderPublicNav } from './public-nav.js';
 
+    // auth.app から直接 Storage インスタンスを初期化
+    const storage = getStorage(auth.app);
+
     const loadingEl = document.getElementById('mypage-loading');
     const contentEl = document.getElementById('mypage-content');
 
