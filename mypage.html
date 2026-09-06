@@ -179,11 +179,18 @@
           <span id="modal-start-time" class="text-sm font-black text-[#B870DE] font-mono">--:--</span>
         </div>
 
-        <!-- 1. バンドメンバー -->
-        <div class="space-y-1.5">
-          <label class="block font-bold text-slate-700">メンバー一覧</label>
-          <textarea id="edit-members" rows="2" placeholder="例: Vo. たろう / Gt. はなこ / Ba. じろう / Dr. さぶろう" class="w-full p-3 bg-[#FAF8FD] border border-purple-100 rounded-xl text-xs focus:ring-2 focus:ring-[#B870DE]/20 focus:border-[#B870DE] text-slate-800 transition leading-relaxed"></textarea>
-          <p class="text-[10px] text-slate-400">パートと名前をスラッシュ(/)やカンマで入力してください</p>
+        <!-- 1. バンドメンバー（行ボックス形式） -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="block font-bold text-slate-700">バンドメンバー</label>
+            <button type="button" id="add-member-btn" class="px-2.5 py-1 rounded-lg bg-purple-50 hover:bg-purple-100 text-[#B870DE] font-bold text-[11px] transition flex items-center gap-1 active:scale-95">
+              <i data-lucide="user-plus" class="w-3 h-3"></i>
+              <span>メンバーを追加</span>
+            </button>
+          </div>
+          <div id="members-container" class="space-y-2">
+            <!-- JSで行ボックスが動的生成されます -->
+          </div>
         </div>
 
         <!-- 2 & 3. セットリスト（曲順・曲名） -->
@@ -360,6 +367,8 @@
     const bandModal = document.getElementById('band-edit-modal');
     const closeModalBtn = document.getElementById('close-modal-btn');
     const bandEditForm = document.getElementById('band-edit-form');
+    const membersContainer = document.getElementById('members-container');
+    const addMemberBtn = document.getElementById('add-member-btn');
     const setlistContainer = document.getElementById('setlist-container');
     const addSongBtn = document.getElementById('add-song-btn');
 
@@ -370,6 +379,43 @@
       currentEditingBandId = null;
     }
     closeModalBtn.addEventListener('click', closeModal);
+
+    // メンバー行ボックスの作成
+    const COMMON_PARTS = ['Vo.', 'Gt.', 'Ba.', 'Dr.', 'Key.', 'Sax.', 'DJ', 'Chorus', 'Support'];
+
+    function createMemberRow(part = 'Vo.', name = '') {
+      const row = document.createElement('div');
+      row.className = 'member-row flex items-center gap-2 p-2 rounded-2xl bg-[#FAF8FD] border border-purple-100 animate-slide-up';
+      
+      const optionsHtml = COMMON_PARTS.map(p => 
+        `<option value="${p}" ${part === p ? 'selected' : ''}>${p}</option>`
+      ).join('');
+
+      row.innerHTML = `
+        <div class="relative shrink-0">
+          <select class="member-part-select appearance-none bg-white font-bold text-slate-700 pl-3 pr-6 py-2 border border-purple-100 rounded-xl text-xs focus:outline-none focus:border-[#B870DE] cursor-pointer shadow-xs">
+            ${optionsHtml}
+            ${!COMMON_PARTS.includes(part) && part ? `<option value="${part}" selected>${part}</option>` : ''}
+          </select>
+          <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+        </div>
+        <input type="text" value="${name}" placeholder="メンバー名" class="member-name-input flex-1 px-3 py-2 bg-white border border-purple-100 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#B870DE]/20 focus:border-[#B870DE] text-slate-800 shadow-xs">
+        <button type="button" class="delete-member-btn w-7 h-7 rounded-xl bg-rose-50 text-rose-500 hover:bg-rose-100 flex items-center justify-center shrink-0 transition active:scale-95">
+          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+        </button>
+      `;
+
+      row.querySelector('.delete-member-btn').addEventListener('click', () => {
+        row.remove();
+      });
+
+      return row;
+    }
+
+    addMemberBtn.addEventListener('click', () => {
+      membersContainer.appendChild(createMemberRow('Gt.', ''));
+      if (window.lucide) window.lucide.createIcons();
+    });
 
     // 曲入力行の作成
     function createSongRow(songName = '', index = 1) {
@@ -419,6 +465,7 @@
 
       currentEditingBandId = bandId;
       document.getElementById('modal-band-name').textContent = bandName;
+      membersContainer.innerHTML = '';
       setlistContainer.innerHTML = '';
 
       try {
@@ -440,20 +487,20 @@
           }
           document.getElementById('modal-start-time').textContent = startTime || '未定';
 
-          // メンバー：{ part: "Vo./Gt.", name: "ユタロ" } のオブジェクト配列を展開
+          // メンバー：行ボックスを展開
           if (Array.isArray(bandData.members) && bandData.members.length > 0) {
-            const formattedMembers = bandData.members.map(m => {
+            bandData.members.forEach(m => {
               if (typeof m === 'object' && m !== null) {
-                return m.part ? `${m.part} ${m.name}` : (m.name || '');
+                membersContainer.appendChild(createMemberRow(m.part || 'Vo.', m.name || ''));
+              } else {
+                membersContainer.appendChild(createMemberRow('Vo.', m || ''));
               }
-              return m;
-            }).join('\n');
-            document.getElementById('edit-members').value = formattedMembers;
+            });
           } else {
-            document.getElementById('edit-members').value = '';
+            membersContainer.appendChild(createMemberRow('Vo.', ''));
           }
 
-          // セットリスト：songIds がある場合は songs コレクションから曲名を取得
+          // セットリスト
           const songIds = Array.isArray(bandData.songIds) ? bandData.songIds : [];
           if (songIds.length > 0) {
             const songPromises = songIds.map(sid => getDoc(doc(db, 'songs', sid)));
@@ -470,11 +517,12 @@
             setlistContainer.appendChild(createSongRow('', 1));
           }
 
-          // Cueシート：cueSheetUrl（画像URL）または cueSheet（テキスト）を取得
+          // Cueシート
           document.getElementById('edit-cuesheet').value = bandData.cueSheetUrl || bandData.cueSheet || '';
 
           bandModal.classList.remove('hidden');
           renumberSongs();
+          if (window.lucide) window.lucide.createIcons();
         } else {
           alert('バンドデータが見つかりませんでした。');
         }
@@ -493,22 +541,18 @@
       saveBtn.disabled = true;
       saveBtn.innerHTML = `<span>保存中...</span>`;
 
-      // メンバーのパース：改行またはスラッシュで区切り、{ name, part } のオブジェクト配列を作成
-      const membersText = document.getElementById('edit-members').value.trim();
-      const memberLines = membersText ? membersText.split(/[\n/]/).map(s => s.trim()).filter(Boolean) : [];
-      const membersArr = memberLines.map(line => {
-        const parts = line.split(/[\s ]+/);
-        if (parts.length >= 2) {
-          return { part: parts[0], name: parts.slice(1).join(' ') };
-        }
-        return { part: '', name: line };
-      });
+      // メンバー配列を行ボックスから直接収集
+      const memberRows = membersContainer.querySelectorAll('.member-row');
+      const membersArr = Array.from(memberRows).map(r => ({
+        part: r.querySelector('.member-part-select').value,
+        name: r.querySelector('.member-name-input').value.trim()
+      })).filter(m => m.name !== '');
 
       // セットリスト配列
       const songInputs = setlistContainer.querySelectorAll('input[type="text"]');
       const setlistArr = Array.from(songInputs).map(inp => inp.value.trim()).filter(Boolean);
 
-      // Cueシート（URL形式なら cueSheetUrl、テキストなら cueSheet に振り分け）
+      // Cueシート
       const cueSheetVal = document.getElementById('edit-cuesheet').value.trim();
       const updateData = {
         members: membersArr,
