@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>タイムテーブル - LIVE FESTIVAL</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700;800&display=swap');
+    body { font-family: 'Inter', 'Noto Sans JP', sans-serif; }
+  </style>
+</head>
+<body class="bg-[#F8FAFC] text-slate-700 min-h-screen pb-24 antialiased">
+
+  <!-- 共通ナビ -->
+  <div id="public-nav-container"></div>
+
+  <!-- 日程切り替えタブ -->
+  <div id="public-header-container"></div>
+
+  <main class="max-w-xl mx-auto p-4 space-y-4">
+    <!-- NOW PLAYING -->
+    <div id="now-playing-container"></div>
+
+    <!-- タイムテーブル本体 -->
+    <section class="space-y-3">
+      <div class="flex items-center justify-between px-1">
+        <h2 id="current-day-heading" class="text-sm font-bold text-slate-800">1日目 スケジュール</h2>
+        <span id="slot-count" class="text-xs text-slate-400 font-semibold">0 枠</span>
+      </div>
+
+      <div id="timeline-list" class="space-y-3">
+        <div class="text-center py-16 text-slate-400 text-sm">読み込み中...</div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { db, collection, onSnapshot, query, orderBy } from '/admin/firebase-config.js';
+    import { renderPublicNav } from './public-nav.js';
+    import { initHeader } from './public-header.js';
+    import { initNowPlaying } from './now-playing.js';
+    import { renderTimelineList } from './public-timeline.js';
+
+    renderPublicNav();
+
+    let activeDay = 'day1';
+    const bandsMap = new Map();
+    const songsMap = new Map();
+    const slotsCache = new Map();
+
+    let triggerNowPlayingUpdate = null;
+
+    const refreshUI = () => {
+      renderTimelineList({ slotsCache, bandsMap, songsMap, activeDay });
+      if (triggerNowPlayingUpdate) triggerNowPlayingUpdate();
+    };
+
+    initHeader({
+      onDayChange: (day) => {
+        activeDay = day;
+        refreshUI();
+      }
+    });
+
+    triggerNowPlayingUpdate = initNowPlaying(slotsCache, bandsMap, () => activeDay);
+
+    onSnapshot(collection(db, 'songs'), (snapshot) => {
+      songsMap.clear();
+      snapshot.forEach(docSnap => songsMap.set(docSnap.id, docSnap.data()));
+      refreshUI();
+    });
+
+    onSnapshot(collection(db, 'bands'), (snapshot) => {
+      bandsMap.clear();
+      snapshot.forEach(docSnap => bandsMap.set(docSnap.id, docSnap.data()));
+      refreshUI();
+    });
+
+    const q = query(collection(db, 'timetable'), orderBy('startTime', 'asc'));
+    onSnapshot(q, (snapshot) => {
+      slotsCache.clear();
+      snapshot.forEach(docSnap => slotsCache.set(docSnap.id, docSnap.data()));
+      refreshUI();
+    });
+  </script>
+</body>
+</html>
