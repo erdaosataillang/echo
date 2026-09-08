@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>売上分析ダッシュボード</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
+        body { background-color: #f4f7f6; color: #333; padding: 20px; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #ddd; padding-bottom: 15px; }
+        .header h1 { font-size: 1.8rem; color: #2c3e50; }
+        .last-update { color: #666; font-size: 0.9rem; }
+
+        /* サマリーカード */
+        .analytics-summary { display: flex; gap: 20px; margin-bottom: 30px; flex-wrap: wrap; }
+        .summary-card { background: #fff; padding: 25px; border-radius: 12px; border: 1px solid #e1e4e8; flex: 1; min-width: 200px; text-align: center; font-size: 1.1rem; color: #555; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .summary-card b { font-size: 2.8rem; display: block; margin-top: 10px; }
+        .text-blue { color: #007bff; }
+        .text-green { color: #28a745; }
+        .text-orange { color: #fd7e14; }
+
+        /* テーブル */
+        .table-container { background: #fff; padding: 25px; border-radius: 12px; border: 1px solid #e1e4e8; box-shadow: 0 4px 6px rgba(0,0,0,0.05); overflow-x: auto; }
+        .table-container h2 { margin-bottom: 20px; font-size: 1.4rem; color: #2c3e50; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border-bottom: 1px solid #eee; padding: 15px; text-align: right; }
+        th:first-child, td:first-child { text-align: left; }
+        th { background-color: #f8f9fa; color: #555; font-size: 0.95rem; }
+        td { font-size: 1.1rem; }
+        .highlight { font-weight: bold; color: #007bff; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>📊 売上分析ダッシュボード</h1>
+        <div class="last-update" id="last-update">データ取得中...</div>
+    </div>
+
+    <div class="analytics-summary">
+        <div class="summary-card">現金売上<br><b class="text-blue" id="stat-cash">0円</b></div>
+        <div class="summary-card">チケット回収<br><b class="text-green" id="stat-ticket">0枚</b></div>
+        <div class="summary-card">総販売数<br><b class="text-orange" id="stat-items">0点</b></div>
+    </div>
+
+    <div class="table-container">
+        <h2>商品別 販売実績（売れ筋順）</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>商品名</th>
+                    <th>総販売数</th>
+                    <th>現金販売</th>
+                    <th>チケット交換</th>
+                    <th>現金売上額</th>
+                </tr>
+            </thead>
+            <tbody id="analytics-body">
+                <tr><td colspan="5" style="text-align:center;">データを読み込んでいます...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA6Toofq1A0qDUgJFimU6C0aZuz-L1RuN8",
+            authDomain: "echo-4bc7e.firebaseapp.com",
+            projectId: "echo-4bc7e",
+            storageBucket: "echo-4bc7e.firebasestorage.app",
+            messagingSenderId: "206573954980",
+            appId: "1:206573954980:web:f9d5ab978e12bd83664331",
+            measurementId: "G-7MLE8EGBM7"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const products = [
+            { id: 'water', name: 'お水', cashPrice: 200 }, { id: 'tea', name: 'お茶', cashPrice: 200 },
+            { id: 'calpis', name: 'カルピス', cashPrice: 200 }, { id: 'calpis_soda', name: 'カルピスソーダ', cashPrice: 200 },
+            { id: 'orange', name: 'オレンジジュース', cashPrice: 200 }, { id: 'cola', name: 'コーラ', cashPrice: 200 },
+            { id: 'redbull', name: 'レッドブル', cashPrice: 300 }, { id: 'redbull_purple', name: 'レッドブルパープル', cashPrice: 300 }
+        ];
+
+        // リアルタイムでデータを集計
+        onSnapshot(query(collection(db, "sales"), orderBy("createdAt", "desc")), (snapshot) => {
+            let sumCash = 0;
+            let sumTicket = 0;
+            let sumItems = 0;
+            
+            let itemStats = {};
+            products.forEach(p => {
+                itemStats[p.id] = { name: p.name, price: p.cashPrice, totalQty: 0, cashQty: 0, ticketQty: 0, salesYen: 0 };
+            });
+
+            snapshot.forEach((docSnap) => {
+                const data = docSnap.data();
+                if (!data.cart) return;
+
+                Object.entries(data.cart).forEach(([id, qty]) => {
+                    if(itemStats[id]) {
+                        itemStats[id].totalQty += qty;
+                        sumItems += qty;
+                        
+                        if (data.mode === 'cash') {
+                            itemStats[id].cashQty += qty;
+                            const sales = itemStats[id].price * qty;
+                            itemStats[id].salesYen += sales;
+                            sumCash += sales;
+                        } else {
+                            itemStats[id].ticketQty += qty;
+                            sumTicket += qty;
+                        }
+                    }
+                });
+            });
+
+            // 画面の更新
+            document.getElementById('stat-cash').innerText = sumCash.toLocaleString() + '円';
+            document.getElementById('stat-ticket').innerText = sumTicket.toLocaleString() + '枚';
+            document.getElementById('stat-items').innerText = sumItems.toLocaleString() + '点';
+
+            const tbody = document.getElementById('analytics-body');
+            tbody.innerHTML = '';
+            
+            // 総販売数が多い順に並び替え
+            const sortedStats = Object.values(itemStats).sort((a, b) => b.totalQty - a.totalQty);
+            
+            sortedStats.forEach(stat => {
+                tbody.innerHTML += `<tr>
+                    <td><b>${stat.name}</b></td>
+                    <td>${stat.totalQty}点</td>
+                    <td>${stat.cashQty}</td>
+                    <td>${stat.ticketQty}</td>
+                    <td class="highlight">${stat.salesYen.toLocaleString()}円</td>
+                </tr>`;
+            });
+
+            const now = new Date();
+            document.getElementById('last-update').innerText = `最終更新: ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+        });
+    </script>
+</body>
+</html>
