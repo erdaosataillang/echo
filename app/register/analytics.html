@@ -8,9 +8,17 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
         body { background-color: #f4f7f6; color: #333; padding: 20px; }
         
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #ddd; padding-bottom: 15px; }
-        .header h1 { font-size: 1.8rem; color: #2c3e50; }
-        .last-update { color: #666; font-size: 0.9rem; }
+        .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; border-bottom: 2px solid #ddd; padding-bottom: 15px; flex-wrap: wrap; gap: 15px; }
+        .header h1 { font-size: 1.8rem; color: #2c3e50; margin-bottom: 10px; }
+        
+        /* ⬇︎ 日付フィルター用デザイン */
+        .filter-controls { display: flex; align-items: center; gap: 10px; background: #fff; padding: 10px 15px; border-radius: 8px; border: 1px solid #e1e4e8; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .filter-controls label { font-weight: bold; color: #555; }
+        input[type="date"] { padding: 8px 12px; border: 1px solid #ccc; border-radius: 5px; font-size: 1.1rem; outline: none; cursor: pointer; }
+        .btn-clear { padding: 8px 15px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 1rem; transition: 0.2s; }
+        .btn-clear:hover { background: #5a6268; }
+        
+        .last-update { color: #666; font-size: 0.9rem; align-self: flex-end; }
 
         /* サマリーカード */
         .analytics-summary { display: flex; gap: 20px; margin-bottom: 30px; flex-wrap: wrap; }
@@ -29,12 +37,21 @@
         th { background-color: #f8f9fa; color: #555; font-size: 0.95rem; }
         td { font-size: 1.1rem; }
         .highlight { font-weight: bold; color: #007bff; }
+        
+        .no-data { text-align: center; padding: 30px; color: #777; font-size: 1.2rem; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1>📊 売上分析ダッシュボード</h1>
+        <div>
+            <h1>📊 売上分析ダッシュボード</h1>
+            <div class="filter-controls">
+                <label for="date-filter">対象日:</label>
+                <input type="date" id="date-filter">
+                <button class="btn-clear" id="btn-all-time">全期間を表示</button>
+            </div>
+        </div>
         <div class="last-update" id="last-update">データ取得中...</div>
     </div>
 
@@ -57,7 +74,7 @@
                 </tr>
             </thead>
             <tbody id="analytics-body">
-                <tr><td colspan="5" style="text-align:center;">データを読み込んでいます...</td></tr>
+                <tr><td colspan="5" class="no-data">データを読み込んでいます...</td></tr>
             </tbody>
         </table>
     </div>
@@ -85,8 +102,37 @@
             { id: 'redbull', name: 'レッドブル', cashPrice: 300 }, { id: 'redbull_purple', name: 'レッドブルパープル', cashPrice: 300 }
         ];
 
-        // リアルタイムでデータを集計
+        let allSalesData = []; // Firebaseから取得した全データを保持
+
+        // ★ 初期設定：日付フィルターを「今日」にセット
+        const dateInput = document.getElementById('date-filter');
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        dateInput.value = todayStr;
+
+        // Firebaseの監視（データ追加・取消時に自動でここが走る）
         onSnapshot(query(collection(db, "sales"), orderBy("createdAt", "desc")), (snapshot) => {
+            allSalesData = [];
+            snapshot.forEach((docSnap) => {
+                const data = docSnap.data();
+                if (data.cart && data.createdAt) {
+                    allSalesData.push({ id: docSnap.id, ...data });
+                }
+            });
+            renderAnalytics(); // データ取得後に描画
+        });
+
+        // フィルターの値が変わった時、または「全期間」ボタンを押した時に再描画
+        dateInput.addEventListener('change', renderAnalytics);
+        document.getElementById('btn-all-time').addEventListener('click', () => {
+            dateInput.value = ''; // 日付を空にする
+            renderAnalytics();
+        });
+
+        // 集計と描画のメイン関数
+        function renderAnalytics() {
+            const filterDate = dateInput.value; // "YYYY-MM-DD" 形式、または空文字
+
             let sumCash = 0;
             let sumTicket = 0;
             let sumItems = 0;
@@ -96,9 +142,16 @@
                 itemStats[p.id] = { name: p.name, price: p.cashPrice, totalQty: 0, cashQty: 0, ticketQty: 0, salesYen: 0 };
             });
 
-            snapshot.forEach((docSnap) => {
-                const data = docSnap.data();
-                if (!data.cart) return;
+            // 保持している全データから、条件に合うものだけを集計
+            allSalesData.forEach(data => {
+                // ドキュメントの日付文字列を作成
+                const dateObj = data.createdAt.toDate();
+                const recordDateStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+
+                // 日付が指定されていて、かつレコードの日付と一致しない場合はスキップ
+                if (filterDate && filterDate !== recordDateStr) {
+                    return;
+                }
 
                 Object.entries(data.cart).forEach(([id, qty]) => {
                     if(itemStats[id]) {
@@ -118,30 +171,38 @@
                 });
             });
 
-            // 画面の更新
+            // サマリーの更新
             document.getElementById('stat-cash').innerText = sumCash.toLocaleString() + '円';
             document.getElementById('stat-ticket').innerText = sumTicket.toLocaleString() + '枚';
             document.getElementById('stat-items').innerText = sumItems.toLocaleString() + '点';
 
+            // テーブルの更新
             const tbody = document.getElementById('analytics-body');
             tbody.innerHTML = '';
             
-            // 総販売数が多い順に並び替え
-            const sortedStats = Object.values(itemStats).sort((a, b) => b.totalQty - a.totalQty);
-            
-            sortedStats.forEach(stat => {
-                tbody.innerHTML += `<tr>
-                    <td><b>${stat.name}</b></td>
-                    <td>${stat.totalQty}点</td>
-                    <td>${stat.cashQty}</td>
-                    <td>${stat.ticketQty}</td>
-                    <td class="highlight">${stat.salesYen.toLocaleString()}円</td>
-                </tr>`;
-            });
+            if (sumItems === 0) {
+                const msg = filterDate ? `${filterDate} の販売データはありません` : `販売データがありません`;
+                tbody.innerHTML = `<tr><td colspan="5" class="no-data">${msg}</td></tr>`;
+            } else {
+                // 総販売数が多い順に並び替え
+                const sortedStats = Object.values(itemStats).sort((a, b) => b.totalQty - a.totalQty);
+                
+                sortedStats.forEach(stat => {
+                    if (stat.totalQty === 0) return; // 売れていない商品は隠す場合はこの行を活かす（表示したい場合は消す）
+
+                    tbody.innerHTML += `<tr>
+                        <td><b>${stat.name}</b></td>
+                        <td>${stat.totalQty}点</td>
+                        <td>${stat.cashQty}</td>
+                        <td>${stat.ticketQty}</td>
+                        <td class="highlight">${stat.salesYen.toLocaleString()}円</td>
+                    </tr>`;
+                });
+            }
 
             const now = new Date();
             document.getElementById('last-update').innerText = `最終更新: ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
-        });
+        }
     </script>
 </body>
 </html>
